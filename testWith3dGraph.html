@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script src="//unpkg.com/3d-force-graph"></script>
+	</head>
+	<body>
+		<div id="3d-graph"></div>
+	</body>
+	<script src="./Neo4jConnector.js"></script>
+	<script src="./basic.js"></script>
+	<script src="./neo4jWith3DGraph.js"></script>
+	<script src="./eventManager.js"></script>
+	<script src="./THREEUtils.js"></script>
+	<script src="./three.js"></script>
+	
+	<script src="//unpkg.com/dat.gui"></script>
+	<script src="./GUI.js"></script>
+	<script src="./GUIController.js"></script>
+	<script>
+	(async ()=>{
+		// initialize Neo4jConnector //
+		a = new Connector("bolt://localhost:7687","neo4j","123456")
+		a.setDatabase("neo4j")
+		a.initSession();
+		a.session.run("MATCH (n) return n").then((res)=>{console.log(res)});
+
+		//-------------------------//
+		
+		// reference others code //
+		Graph = ForceGraph3D()(document.getElementById('3d-graph'));
+		gData = {};
+		
+		const start = new Date();
+		a.initSession();
+		await a.session
+      .run('match (n)-[rel]->(m) match (node) return (node),id(n) as source,id(m) as target , id(rel) as linkid LIMIT $limit', {limit: neo4j.int(5000)})
+      .then(function (result) {
+		let linkIdSet = new Set();
+		let nodeIdSet = new Set();
+        const links = result.records.map(r => { 
+		if(!linkIdSet.has(r.get('linkid').toNumber())){
+			linkIdSet.add(r.get('linkid').toNumber());
+			return {source:r.get('source').toNumber(), target:r.get('target').toNumber()}
+		}
+		}).filter((i)=>{return i!=undefined});        
+        const nodes = result.records.map(r => { 
+		if(!nodeIdSet.has(r.get('node').identity.toNumber())){
+			nodeIdSet.add(r.get('node').identity.toNumber());
+			return {id:r.get('node').identity.toNumber(), labels:r.get('node').labels,properties:r.get('node').properties}
+		}
+		}).filter((i)=>{return i!=undefined});        
+        a.session.close();
+        console.log(links.length+" links loaded in "+(new Date()-start)+" ms.")
+        //const ids = new Set()
+        //links.forEach(l => {ids.add(l.source);ids.add(l.target);});
+        gData = { nodes: nodes, links: links}
+        Graph.graphData(gData);
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+	  //-------------------------//
+	  
+	  // initialize basic //
+	  basic = new Basic(Graph,gData);
+	  //init a node
+	  //node = a.initNode();
+	  //node.name = "new";
+	  //node.id = 88;
+	  //basic.addNodes([node]);
+	  //------------------//
+	  
+	  // test neo4jWith3DGraph.js //
+	  NWG = new neo4jWith3DGraph(basic,a);
+	  //node.name = "new2";
+	  //NWG.addNodes([node]);
+	  //setInterval(()=>{
+		//basic.addNodes([node]);
+	  //},1000);
+	  
+	  //--------------------------//
+	  
+	  // initialize THREEUtils //
+	  utils = new THREEUtils(this);
+	  //-------------------------//
+	  
+	  // add cube //
+		var geometry = new THREE.BoxBufferGeometry(2, 2, 2);//创建一个立方体
+		var material = new THREE.MeshBasicMaterial({color: 0xff0000});//填充的材质
+		var cube = new THREE.Mesh(geometry, material);//网格绘制
+		Graph.scene().add(cube);
+      //----------//
+	  
+	  
+	  
+	  // init GUI //
+	  const datgui = new dat.GUI();
+	  let gui = new GUI(datgui);
+	  let guiController = new GUIController(gui,NWG,this);
+	  //----------//
+	  
+	  // DO NOT BIND GRAPH EVENT THERE! BIND IN EVENTMANAGER!//
+	  //Graph.onNodeClick((node)=>{guiController.editNodePanel(node);});
+	  //---------------------------------//
+	  
+	  // initialize EventManager //
+	  eventManager = new EventManager(document.getElementById('3d-graph'),Graph,guiController,NWG);
+	  
+	  eventManager.onBackgroundDoubleClick((e)=>{
+		console.log("background double clicked");
+		console.log(e);
+		let pos = {x:e.clientX,y:e.clientY};
+		let target = this.utils.get3DPosByCanvasPos(pos,0.5,Graph.camera());
+		['x','y','z'].forEach((axis)=>{
+			cube.position[axis] = target[axis];
+		});
+		//cube.position = target;
+		console.log(target);
+		let node = a.initNode();
+		node.name = "a";
+		['x','y','z'].forEach((axis)=>{
+			node[axis] = target[axis];
+		});
+		let nodes = [];
+		NWG.addNodes([node]);
+		console.log(nodes);
+		//Do double click stuff
+	  });
+	  //-------------------------//
+	  
+	})();
+	</script>
+</html>

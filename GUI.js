@@ -1,0 +1,75 @@
+(()=>{
+	class GUI{
+		constructor(datGUI){
+			this.gui = datGUI;
+			
+			
+			this.settings = {
+				
+			};
+			
+			this.controllers = [];
+			this.folders = [];
+		}
+		
+		applySettings(settings){
+			this.clear();
+			let option = null;
+			let folder = null;
+			let folderStack = [this.gui];
+			let optionStack = [settings];
+			option = optionStack.pop();
+			folder = folderStack.pop();
+			
+				
+				
+				
+				
+			while(option != undefined){
+				for(let i = 0 ; i < Object.keys(option).length;i++){
+					let key = Object.keys(option)[i];
+					if(key.includes("on")||key.includes("__")) continue;
+					if(typeof(option[key])=='object'){
+						optionStack.push(option[key]);
+						let addedFolder = folder.addFolder(key);
+						folderStack.push(addedFolder);
+						this.folders.push(addedFolder);
+					}else{
+						settings["on"+key+"Change"] = ()=>{};
+						let controller = folder.add(option, key);
+						controller.onChange((val)=>{
+							settings["on"+key+"Change"](val);
+						});
+						this.controllers.push(controller);
+					}
+				}
+				option = optionStack.pop();
+				folder = folderStack.pop();
+			}
+			return settings;
+		}
+		
+		clear(){
+			for(let i = this.folders.length-1 ; i >= 0;i--){
+				let folder = this.folders[i-1];
+				let f = this.folders[i];
+				try{
+					folder.removeFolder(f);
+				}catch{
+					this.gui.removeFolder(f);
+				}
+			}
+
+			this.folders = [];
+			this.controllers.forEach((c)=>{
+				try{
+					this.gui.remove(c);
+				}catch{}
+			});
+			this.controllers = [];
+			
+		}
+	}
+	
+	this.GUI = GUI;
+})();
