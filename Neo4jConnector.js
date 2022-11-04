@@ -87,8 +87,9 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 						cypherString += node.name;
 						cypherString += ".";
 						cypherString+=prop;
-						cypherString+='=';
+						cypherString+='="';
 						cypherString+=node.properties[prop];
+						cypherString+='"';
 						Object.keys(node.properties).length-1 == idx ? null:cypherString+=','
 					});
 					
@@ -163,7 +164,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString += node.id;
 					
 					cypherString+=" DETACH DELETE ";
-					cypherString += node.name;
+					cypherString += "(n)";
 					
 					await _this.session.run(cypherString).then(()=>{
 						
