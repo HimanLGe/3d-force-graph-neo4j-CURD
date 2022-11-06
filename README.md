@@ -1,6 +1,6 @@
 # 3d-Force-Graph-Neo4j-CURD
 
-
+![preview](https://github.com/HimanLGe/3d-force-graph-neo4j-CURD/blob/master/img/preview.jpg?raw=true)
 
 ## Brief
 
