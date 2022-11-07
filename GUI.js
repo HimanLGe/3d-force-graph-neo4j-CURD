@@ -28,7 +28,7 @@
 			while(option != undefined){
 				for(let i = 0 ; i < Object.keys(option).length;i++){
 					let key = Object.keys(option)[i];
-					if(key.includes("on")||key.includes("__")) continue;
+					if(key.includes("on")||key.includes("__")||key.includes("neighbors")||key.includes("source")||key.includes("target")) continue;
 					if(typeof(option[key])=='object'){
 						optionStack.push(option[key]);
 						let addedFolder = folder.addFolder(key);
@@ -54,7 +54,7 @@
 				let folder = this.folders[i-1];
 				let f = this.folders[i];
 				try{
-					folder.removeFolder(f);
+					f.parent.removeFolder(f);
 				}catch{
 					this.gui.removeFolder(f);
 				}

@@ -86,12 +86,7 @@
 	  utils = new THREEUtils(this);
 	  //-------------------------//
 	  
-	  // add cube //
-		var geometry = new THREE.BoxBufferGeometry(2, 2, 2);//创建一个立方体
-		var material = new THREE.MeshBasicMaterial({color: 0xff0000});//填充的材质
-		var cube = new THREE.Mesh(geometry, material);//网格绘制
-		Graph.scene().add(cube);
-      //----------//
+	  
 	  
 	  
 	  
@@ -106,28 +101,7 @@
 	  //---------------------------------//
 	  
 	  // initialize EventManager //
-	  eventManager = new EventManager(document.getElementById('3d-graph'),Graph,guiController,NWG);
-	  
-	  eventManager.onBackgroundDoubleClick((e)=>{
-		console.log("background double clicked");
-		console.log(e);
-		let pos = {x:e.clientX,y:e.clientY};
-		let target = this.utils.get3DPosByCanvasPos(pos,0.5,Graph.camera());
-		['x','y','z'].forEach((axis)=>{
-			cube.position[axis] = target[axis];
-		});
-		//cube.position = target;
-		console.log(target);
-		let node = a.initNode();
-		node.name = "a";
-		['x','y','z'].forEach((axis)=>{
-			node[axis] = target[axis];
-		});
-		let nodes = [];
-		NWG.addNodes([node]);
-		console.log(nodes);
-		//Do double click stuff
-	  });
+	  eventManager = new EventManager(document.getElementById('3d-graph'),Graph,guiController,NWG,a,utils,THREE);
 	  //-------------------------//
 	  
 	})();
