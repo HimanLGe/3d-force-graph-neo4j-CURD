@@ -14,12 +14,15 @@
 	<script src="./eventManager.js"></script>
 	<script src="./THREEUtils.js"></script>
 	<script src="./three.js"></script>
+	<script src="//unpkg.com/three-spritetext"></script>
 	
 	<script src="//unpkg.com/dat.gui"></script>
 	<script src="./GUI.js"></script>
 	<script src="./GUIController.js"></script>
 	<script>
 	(async ()=>{
+		//ADD three-spritetext TO THREE
+		THREE.SpriteText = SpriteText;
 		// initialize Neo4jConnector //
 		a = new Connector("bolt://localhost:7687","neo4j","123456")
 		a.setDatabase("neo4j")
@@ -30,6 +33,7 @@
 		
 		// reference others code //
 		Graph = ForceGraph3D()(document.getElementById('3d-graph'));
+		//Graph.backgroundColor("white");
 		gData = {};
 		
 		const start = new Date();

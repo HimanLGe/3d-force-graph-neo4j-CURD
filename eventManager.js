@@ -24,7 +24,8 @@
 				"BackgroundDoubleClick",
 				"AltKeyUpAndTwoNodesClicked",
 				"HighLightNode",
-				"HighLightLink"
+				"HighLightLink",
+				"HoverNode"
 			]
 			
 			this.events = {};
@@ -105,6 +106,7 @@
 			
 			this.Graph3d.onNodeHover((node)=>{
 				this.dispatchHighLightNode(node);
+				this.dispatchHoverNode(node);
 			});
 			
 			this.Graph3d.onLinkHover((link)=>{
@@ -115,6 +117,7 @@
 		registerHandeler(){
 			this.backgroundDoubleClickHandeler();
 			this.highLightHandler();
+			this.hoverNodeHandler();
 		}
 		
 		judgeBackgroundDoubleClick(e){
@@ -220,6 +223,24 @@
 
 				_this.updateHighlight();
 			}));
+		}
+		
+		hoverNodeHandler(){
+			let _this = this;
+			this.onHoverNode(node=>{
+				_this.Graph3d.nodeThreeObject(node=>{
+					if(_this.highlightNodes.has(node)){
+						
+						let sprite = new _this.THREE.SpriteText(node.id);
+						sprite.material.depthWrite = false; // make sprite background transparent
+						sprite.color = node === _this.hoverNode ? 'orange' : 'green';
+						sprite.textHeight = 8;
+						return sprite;
+					}else{
+						return false;
+					}
+				});
+			});
 		}
 	
 		
