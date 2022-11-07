@@ -25,7 +25,8 @@
 				"AltKeyUpAndTwoNodesClicked",
 				"HighLightNode",
 				"HighLightLink",
-				"HoverNode"
+				"HoverNode",
+				"ClickNode"
 			]
 			
 			this.events = {};
@@ -101,6 +102,7 @@
 			this.Graph3d.onNodeClick((node,event)=>{
 				this.guiController.editNodePanel(node);
 				this.judgeAltKeyUpAndTwoNodesClicked(node,event);
+				this.dispatchClickNode(node,event);
 			})
 			.nodeColor(node => this.selectedNodes.has(node) ? 'yellow' : 'grey');
 			
@@ -118,6 +120,7 @@
 			this.backgroundDoubleClickHandeler();
 			this.highLightHandler();
 			this.hoverNodeHandler();
+			this.clickNodeHandler();
 		}
 		
 		judgeBackgroundDoubleClick(e){
@@ -240,6 +243,26 @@
 						return false;
 					}
 				});
+			});
+		}
+		
+		clickNodeHandler(){
+			let _this = this;
+			this.onClickNode((node,event)=>{
+				// Aim at node from outside it //
+				let distance = 150;
+				let distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+
+				let newPos = node.x || node.y || node.z
+				? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+				: { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+
+				_this.Graph3d.cameraPosition(
+				newPos, // new position
+				node, // lookAt ({ x, y, z })
+				800  // ms transition duration
+				);
+				//------------------------------//
 			});
 		}
 	
