@@ -25,7 +25,7 @@
 				"AltKeyUpAndTwoNodesClicked",
 				"HighLightNode",
 				"HighLightLink",
-				"HoverNode",
+				"Hover",//Node or Link
 				"ClickNode"
 			]
 			
@@ -37,9 +37,9 @@
 				};
 				this.events[eventName] = event;
 				
-				this["dispatch"+eventName] = (e)=>{
+				this["dispatch"+eventName] = (e1,e2)=>{
 					this.events[eventName].todo.forEach((customFunc)=>{
-						customFunc(e);
+						customFunc(e1,e2);
 					});
 				}
 				
@@ -106,20 +106,27 @@
 			})
 			.nodeColor(node => this.selectedNodes.has(node) ? 'yellow' : 'grey');
 			
+			
+			
 			this.Graph3d.onNodeHover((node)=>{
 				this.dispatchHighLightNode(node);
-				this.dispatchHoverNode(node);
+				this.dispatchHover(node);
+			});
+			
+			this.Graph3d.onLinkClick((link,event)=>{
+				this.guiController.editLinkPanel(link);
 			});
 			
 			this.Graph3d.onLinkHover((link)=>{
 				this.dispatchHighLightLink(link);
+				this.dispatchHover();
 			});
 		}
 		
 		registerHandeler(){
 			this.backgroundDoubleClickHandeler();
 			this.highLightHandler();
-			this.hoverNodeHandler();
+			this.hoverHandler();
 			this.clickNodeHandler();
 		}
 		
@@ -154,10 +161,10 @@
 			if(this.selectedNodes.size==2){
 				let nodes = [];
 				this.selectedNodes.forEach((val)=>{
-					val.apply();
+					//val.apply();
 					nodes.push(val);
 				});
-				this.NWG.addRelationships(nodes[0],{name:"rel",labels:["linkto"]},nodes[1]);
+				this.NWG.addRelationships(nodes[0],{name:"rel",labels:["linkto"],properties:{name:"undefined"}},nodes[1]);//no properties.name will cause bug
 				this.selectedNodes.clear();
 			}
 			
@@ -183,7 +190,8 @@
 				//cube.position = target;
 				console.log(target);
 				let node = this.basic.initNode();
-				node.name = "a";
+				node.name = "new"; //this will let 3dgraph make a tooltip text a
+				node.properties.name = "undefined";
 				['x','y','z'].forEach((axis)=>{
 					node[axis] = target[axis];
 				});
@@ -217,7 +225,7 @@
 			_this.onHighLightLink((link=>{
 				_this.highlightNodes.clear();
 				_this.highlightLinks.clear();
-
+				
 				if (link) {
 				_this.highlightLinks.add(link);
 				_this.highlightNodes.add(link.source);
@@ -228,13 +236,13 @@
 			}));
 		}
 		
-		hoverNodeHandler(){
+		hoverHandler(){
 			let _this = this;
-			this.onHoverNode(node=>{
+			this.onHover(()=>{
 				_this.Graph3d.nodeThreeObject(node=>{
 					if(_this.highlightNodes.has(node)){
 						
-						let sprite = new _this.THREE.SpriteText(node.id);
+						let sprite = new _this.THREE.SpriteText(node.properties.name?node.properties.name:node.id);
 						sprite.material.depthWrite = false; // make sprite background transparent
 						sprite.color = node === _this.hoverNode ? 'orange' : 'green';
 						sprite.textHeight = 8;
@@ -242,26 +250,49 @@
 					}else{
 						return false;
 					}
+				})
+				.linkThreeObject(link => {
+					if(_this.highlightLinks.has(link)){
+				  // extend link with text sprite
+				  const sprite = new _this.THREE.SpriteText(`${link.properties.name}`);
+				  sprite.color = 'lightgrey';
+				  sprite.textHeight = 4;
+				  return sprite;
+					}else{
+						return false;
+					}
+				})
+				.linkPositionUpdate((sprite, { start, end }) => {
+				  const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+					[c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+				  })));
+
+				  // Position sprite
+				  Object.assign(sprite.position, middlePos);
 				});
 			});
+			
+			
 		}
 		
 		clickNodeHandler(){
 			let _this = this;
 			this.onClickNode((node,event)=>{
 				// Aim at node from outside it //
-				let distance = 150;
-				let distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+					if(!event.altKey){
+					let distance = 150;
+					let distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
 
-				let newPos = node.x || node.y || node.z
-				? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
-				: { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+					let newPos = node.x || node.y || node.z
+					? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+					: { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
 
-				_this.Graph3d.cameraPosition(
-				newPos, // new position
-				node, // lookAt ({ x, y, z })
-				800  // ms transition duration
-				);
+					_this.Graph3d.cameraPosition(
+					newPos, // new position
+					node, // lookAt ({ x, y, z })
+					800  // ms transition duration
+					);
+				}
 				//------------------------------//
 			});
 		}

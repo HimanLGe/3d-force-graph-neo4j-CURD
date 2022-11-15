@@ -3,10 +3,12 @@
 	<head>
 		<meta charset="UTF-8">
 		<title></title>
-		<script src="//unpkg.com/3d-force-graph"></script>
+		<script src="./3d-force-graph.min.js"></script>
+		
 	</head>
 	<body>
 		<div id="3d-graph"></div>
+		<textarea class="cmd"></textarea>
 	</body>
 	<script src="./Neo4jConnector.js"></script>
 	<script src="./basic.js"></script>
@@ -14,11 +16,12 @@
 	<script src="./eventManager.js"></script>
 	<script src="./THREEUtils.js"></script>
 	<script src="./three.js"></script>
-	<script src="//unpkg.com/three-spritetext"></script>
+	<script src="./three-spritetext.min.js"></script>
 	
-	<script src="//unpkg.com/dat.gui"></script>
+	<script src="./dat.gui.js"></script>
 	<script src="./GUI.js"></script>
 	<script src="./GUIController.js"></script>
+	<script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
 	<script>
 	(async ()=>{
 		//ADD three-spritetext TO THREE
@@ -26,49 +29,19 @@
 		// initialize Neo4jConnector //
 		a = new Connector("bolt://localhost:7687","neo4j","123456")
 		a.setDatabase("neo4j")
-		a.initSession();
+		await a.initSession();
 		a.session.run("MATCH (n) return n").then((res)=>{console.log(res)});
 
 		//-------------------------//
 		
 		// reference others code //
 		Graph = ForceGraph3D()(document.getElementById('3d-graph'));
-		//Graph.backgroundColor("white");
-		gData = {};
+	
 		
-		const start = new Date();
-		a.initSession();
-		await a.session
-      .run('match (n)-[rel]->(m) match (node) return (node),id(n) as source,id(m) as target , id(rel) as linkid LIMIT $limit', {limit: neo4j.int(5000)})
-      .then(function (result) {
-		let linkIdSet = new Set();
-		let nodeIdSet = new Set();
-        const links = result.records.map(r => { 
-		if(!linkIdSet.has(r.get('linkid').toNumber())){
-			linkIdSet.add(r.get('linkid').toNumber());
-			return {source:r.get('source').toNumber(), target:r.get('target').toNumber()}
-		}
-		}).filter((i)=>{return i!=undefined});        
-        const nodes = result.records.map(r => { 
-		if(!nodeIdSet.has(r.get('node').identity.toNumber())){
-			nodeIdSet.add(r.get('node').identity.toNumber());
-			return {id:r.get('node').identity.toNumber(), labels:r.get('node').labels,properties:r.get('node').properties}
-		}
-		}).filter((i)=>{return i!=undefined});        
-        a.session.close();
-        console.log(links.length+" links loaded in "+(new Date()-start)+" ms.")
-        //const ids = new Set()
-        //links.forEach(l => {ids.add(l.source);ids.add(l.target);});
-        gData = { nodes: nodes, links: links}
-        Graph.graphData(gData);
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
 	  //-------------------------//
 	  
 	  // initialize basic //
-	  basic = new Basic(Graph,gData);
+	  basic = new Basic(Graph);
 	  //init a node
 	  //node = a.initNode();
 	  //node.name = "new";
@@ -78,6 +51,7 @@
 	  
 	  // test neo4jWith3DGraph.js //
 	  NWG = new neo4jWith3DGraph(basic,a);
+	  NWG.getAll();
 	  //node.name = "new2";
 	  //NWG.addNodes([node]);
 	  //setInterval(()=>{
@@ -97,7 +71,7 @@
 	  // init GUI //
 	  const datgui = new dat.GUI();
 	  let gui = new GUI(datgui);
-	  let guiController = new GUIController(gui,NWG,this);
+	  let guiController = new GUIController(gui,NWG,$,this);
 	  //----------//
 	  
 	  // DO NOT BIND GRAPH EVENT THERE! BIND IN EVENTMANAGER!//
@@ -105,7 +79,7 @@
 	  //---------------------------------//
 	  
 	  // initialize EventManager //
-	  eventManager = new EventManager(document.getElementById('3d-graph'),Graph,guiController,NWG,a,utils,THREE);
+	  eventManager = new EventManager(document.getElementById('3d-graph'),Graph,guiController,NWG,basic,utils,THREE);
 	  //-------------------------//
 	  
 	})();

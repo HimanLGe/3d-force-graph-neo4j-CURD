@@ -20,13 +20,13 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		this.database = db;
 	}
 	
-	initSession(){
-		this.session = this.driver.session({database:this.database});
+	async initSession(){
+		this.session = await this.driver.session({database:this.database});
 	}
 	
 	//it return the ids of nodes as a array
 	addNodes(nodes){
-		this.initSession();
+		
 		return new Promise((resolve,reject)=>{
 				let _this = this;
 				let nodeids = [];
@@ -45,8 +45,9 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+='{';
 					Object.keys(node.properties).forEach((prop,idx)=>{
 						cypherString+=prop;
-						cypherString+=':';
+						cypherString+=':"';
 						cypherString+=node.properties[prop];
+						cypherString+='"';
 						Object.keys(node.properties).length-1 == idx ? null:cypherString+=','
 					});
 					cypherString+='}';
@@ -54,13 +55,14 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+=") return id(";
 					cypherString+=node.name;
 					cypherString+=") as id";
+					await _this.initSession();
 					await _this.session.run(cypherString)._getOrCreatePromise()
 					.then((res)=>{
 						nodeids.push(res.records[0].get('id').toNumber());
 					});
 
 				}
-			_this.session.close();
+			await _this.session.close();
 			resolve(nodeids);
 			})(resolve,reject);
 		});
@@ -68,7 +70,6 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	
 	setNode(node){
 		if(node.labels.length==0&&Object.keys(node.properties).length==0) return;
-		this.initSession();
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
@@ -103,19 +104,69 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 						node.labels.length-1 == j ? null:cypherString+=','
 					}
 					
-					
+					await _this.initSession();
 					await _this.session.run(cypherString).then(()=>{
 						
 					});
 				
-				_this.session.close();
+				await _this.session.close();
+				resolve();
+			})(resolve,reject);
+		});
+	}
+	
+	setLink(node){
+		
+		
+		return new Promise((resolve,reject)=>{
+			let _this = this;
+			(async function(resolve,reject){
+				node.name?null:node.name="node";
+				let cypherString = 'MATCH(n)-[';
+				
+					
+					cypherString += node.name;
+					
+					cypherString+="]-(m) WHERE id("
+					cypherString+=node.name;
+					cypherString+=")=";
+					cypherString+=node.id;
+					cypherString+=" CREATE (n)-[r2:"
+					cypherString+=node.type;
+					cypherString+="]->(m)";
+					cypherString+=" SET r2=";
+					cypherString+=node.name;
+					
+					cypherString+=Object.keys(node.properties).length!=0?" ,":"";
+					Object.keys(node.properties).forEach((prop,idx)=>{
+						cypherString += node.name;
+						cypherString += ".";
+						cypherString+=prop;
+						cypherString+='="';
+						cypherString+=node.properties[prop];
+						cypherString+='"';
+						Object.keys(node.properties).length-1 == idx ? null:cypherString+=','
+					});
+					
+					cypherString+=" WITH ";
+					cypherString+=node.name;
+					cypherString+=" DELETE ";
+					cypherString+=node.name;
+					
+					
+					await _this.initSession();
+					await _this.session.run(cypherString).then(()=>{
+						
+					});
+				
+				await _this.session.close();
 				resolve();
 			})(resolve,reject);
 		});
 	}
 	
 	delNodes(nodes){
-		this.initSession();
+		
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
@@ -138,18 +189,19 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+=") DETACH DELETE ";
 					cypherString += node.name;
 					});
+					await _this.initSession();
 					await _this.session.run(cypherString).then(()=>{
 						
 					});
 				
-				_this.session.close();
+				await _this.session.close();
 				resolve();
 			})(resolve,reject);
 		});
 	}
 	
 	delNode(node){
-		this.initSession();
+		
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
@@ -165,12 +217,39 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					
 					cypherString+=" DETACH DELETE ";
 					cypherString += "(n)";
-					
+					await _this.initSession();
 					await _this.session.run(cypherString).then(()=>{
 						
 					});
 				
-				_this.session.close();
+				await _this.session.close();
+				resolve();
+			})(resolve,reject);
+		});
+	}
+	
+	delLink(node){
+		
+		return new Promise((resolve,reject)=>{
+			let _this = this;
+			(async function(resolve,reject){
+				let cypherString = 'MATCH(';
+				
+					
+					cypherString+=")-[n]-() ";
+					cypherString+="WHERE id(";
+					cypherString += "n";
+					cypherString += ")=";
+					cypherString += node.id;
+					
+					cypherString+=" DELETE ";
+					cypherString += "(n)";
+					await _this.initSession();
+					await _this.session.run(cypherString).then(()=>{
+						
+					});
+				
+				await _this.session.close();
 				resolve();
 			})(resolve,reject);
 		});
@@ -179,12 +258,12 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	
 	addRelationships(node1,relation,node2){
 		
-		this.initSession();
+		
 		return new Promise((resolve,reject)=>{
 		let _this = this;
 		let relids = [];
 		(async function(resolve,reject){
-
+		
 		let cypherString = 'MATCH(';
 		
 			
@@ -221,8 +300,9 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+='{';
 					Object.keys(relation.properties).forEach((prop,idx)=>{
 						cypherString+=prop;
-						cypherString+=':';
+						cypherString+=':"';
 						cypherString+=relation.properties[prop];
+						cypherString+='"';
 						Object.keys(relation.properties).length-1 == idx ? null:cypherString+=','
 					});
 					cypherString+='}';
@@ -242,19 +322,24 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		
 		cypherString+="id(";
 		cypherString+="node2";
-		cypherString+=") as node2_id";
+		cypherString+=") as node2_id,";
+		
+		cypherString+=relation.name;
+		cypherString+=" as link";
 		
 		
-		
+		await _this.initSession();
 		await _this.session.run(cypherString).then((res)=>{
 						res.records.forEach((record)=>{
 							relids.push({
 									source:record.get("node1_id").toNumber(),
 									index:record.get('id').toNumber(),
-									target:record.get("node2_id").toNumber()
+									target:record.get("node2_id").toNumber(),
+									...record.get("link")
 								});
 						});
-					}).then(()=>{_this.session.close()});
+					});
+		await _this.session.close();
 		//_this.session.close();
 			resolve(relids);
 			})(resolve,reject);

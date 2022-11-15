@@ -2,23 +2,18 @@
 
 //a class operate the graph
 class Basic{
-	constructor(graph,gdata){
+	constructor(graph){
 		this.graph = graph;
-		this.gdata = gdata;
+		
 	}
 	
 	initNode(){
 		let node = {
-			id:-1,
 			name:'',
 			labels:[
-			//{
-				//name:'',
-				//properties:{
-				//name:value
-			//}
-			//}
-			]
+			//"label","label2"
+			],
+			properties:{}
 			
 		};
 		
@@ -67,7 +62,7 @@ class Basic{
 			let target = link.target;
 			let index = link.index;
 			
-			linksAdded.push({source:source,target:target,index:index});
+			linksAdded.push({...link});
 		}
 		let gdata = {
 			nodes:[...this.gdata.nodes],
@@ -81,6 +76,15 @@ class Basic{
       links = links.filter(l => l.source.id != node.id && l.target.id != node.id); // Remove links attached to node
       //nodes.splice(node.id, 1); // Remove node
 	  nodes = nodes.filter((n)=>{return n.id!=node.id})
+      //nodes.forEach((n, idx) => { n.id = idx; }); // Reset node ids to array index
+      this.graph.graphData({ nodes, links });
+    }
+	
+	removeLink(node) {
+      let { nodes, links } = this.graph.graphData();
+      links = links.filter(l => {return l.id!=node.id}); // Remove links attached to node
+      //nodes.splice(node.id, 1); // Remove node
+	  //nodes = nodes.filter((n)=>{return n.id!=node.id})
       //nodes.forEach((n, idx) => { n.id = idx; }); // Reset node ids to array index
       this.graph.graphData({ nodes, links });
     }
