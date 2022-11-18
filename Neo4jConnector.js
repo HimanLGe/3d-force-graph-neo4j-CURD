@@ -139,7 +139,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					
 					cypherString+=Object.keys(node.properties).length!=0?" ,":"";
 					Object.keys(node.properties).forEach((prop,idx)=>{
-						cypherString += node.name;
+						cypherString += "r2";
 						cypherString += ".";
 						cypherString+=prop;
 						cypherString+='="';
@@ -333,7 +333,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 						res.records.forEach((record)=>{
 							relids.push({
 									source:record.get("node1_id").toNumber(),
-									index:record.get('id').toNumber(),
+									id:record.get('id').toNumber(),
 									target:record.get("node2_id").toNumber(),
 									...record.get("link")
 								});

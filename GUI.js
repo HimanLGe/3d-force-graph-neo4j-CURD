@@ -32,6 +32,7 @@
 					if(typeof(option[key])=='object'){
 						optionStack.push(option[key]);
 						let addedFolder = folder.addFolder(key);
+						if(key=="properties"||key=="labels") addedFolder.open();
 						folderStack.push(addedFolder);
 						this.folders.push(addedFolder);
 					}else{

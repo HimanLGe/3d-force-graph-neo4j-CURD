@@ -60,7 +60,7 @@ class Basic{
 			let link = links[i];
 			let source = link.source;
 			let target = link.target;
-			let index = link.index;
+			let id = link.id;
 			
 			linksAdded.push({...link});
 		}
