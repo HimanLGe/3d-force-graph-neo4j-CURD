@@ -84,11 +84,21 @@
 		
 		editNodePanel(settings){
 			settings["apply"] = ()=>{
+				let labelsadd =  settings.labels["add"];
+				let propertiesadd =  settings.properties["add"];
+				let apply =  settings["apply"];
+				let del =  settings["delete"];
+
 				delete settings.labels["add"];
 				delete settings.properties["add"];
 				delete settings["apply"];
 				delete settings["delete"];
 				this.neo4jWithGraph.setNode(settings);
+				
+				settings.labels["add"] = labelsadd;
+				settings.properties["add"] = propertiesadd;
+				settings["apply"] = apply;
+				settings["delete"] = del;
 				console.log("apply");
 				};
 			settings["delete"] = ()=>{
@@ -107,16 +117,31 @@
 				};
 			settings = this.gui.applySettings(settings);
 			settings.onxChange = (e)=>{console.log(e);};
+			if($(".property-name:contains('name')").next("div").children().val()=="undefined"){
+				$(".property-name:contains('name')").next("div").children().val("").focus();
+			}
+			$(".dg.main").on("keyup",(e)=>{console.log(e)});	
+
 			
 		}
 		
 		editLinkPanel(settings){
 			settings["apply"] = ()=>{
-				
+				let labelsadd =  settings.labels["add"];
+				let propertiesadd =  settings.properties["add"];
+				let apply =  settings["apply"];
+				let del =  settings["delete"];
+
+				delete settings.labels["add"];
 				delete settings.properties["add"];
 				delete settings["apply"];
 				delete settings["delete"];
-				this.neo4jWithGraph.setLink(settings);
+				this.neo4jWithGraph.setNode(settings);
+				
+				settings.labels["add"] = labelsadd;
+				settings.properties["add"] = propertiesadd;
+				settings["apply"] = apply;
+				settings["delete"] = del;
 				console.log("apply");
 				};
 			settings["delete"] = ()=>{
@@ -131,7 +156,10 @@
 				};
 			settings = this.gui.applySettings(settings);
 			settings.onxChange = (e)=>{console.log(e);};
-			
+			if($(".property-name:contains('name')").next("div").children().val()=="undefined"){
+				$(".property-name:contains('name')").next("div").children().val("").focus();
+			}
+			$(".dg.main").on("keyup",(e)=>{console.log(e)});
 		}
 	}
 	

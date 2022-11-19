@@ -40,6 +40,7 @@
 						let controller = folder.add(option, key);
 						controller.onChange((val)=>{
 							settings["on"+key+"Change"](val);
+							settings["apply"]();//default upload to neo4j
 						});
 						this.controllers.push(controller);
 					}

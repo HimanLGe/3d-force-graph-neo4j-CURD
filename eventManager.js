@@ -10,6 +10,7 @@
 			this.threeUtils = threeUtils;
 			this.THREE = THREE;
 			this.clickCount = 0;
+			this.currentNode = null;
 			this.selectedNodes = new Set();
 			//background click->true;interval times up -> false
 			this.inDoubuleClickIntervalFlag = false;
@@ -26,7 +27,8 @@
 				"HighLightNode",
 				"HighLightLink",
 				"Hover",//Node or Link
-				"ClickNode"
+				"ClickNode",
+				"DelKeyUp"
 			]
 			
 			this.events = {};
@@ -108,6 +110,7 @@
 			
 			
 			
+			
 			this.Graph3d.onNodeHover((node)=>{
 				this.dispatchHighLightNode(node);
 				this.dispatchHover(node);
@@ -115,12 +118,20 @@
 			
 			this.Graph3d.onLinkClick((link,event)=>{
 				this.guiController.editLinkPanel(link);
+				this.dispatchClickNode(link,event);
 			});
 			
 			this.Graph3d.onLinkHover((link)=>{
 				this.dispatchHighLightLink(link);
 				this.dispatchHover();
+				
 			});
+			
+			document.onkeyup = (e)=>{
+				console.log(e);
+				if(e.key =="Delete") this.dispatchDelKeyUp(this.currentNode,e);
+			}
+			
 		}
 		
 		registerHandeler(){
@@ -128,6 +139,7 @@
 			this.highLightHandler();
 			this.hoverHandler();
 			this.clickNodeHandler();
+			this.delKeyUpHandler();
 		}
 		
 		judgeBackgroundDoubleClick(e){
@@ -278,22 +290,33 @@
 		clickNodeHandler(){
 			let _this = this;
 			this.onClickNode((node,event)=>{
+					_this.currentNode = node;
 				// Aim at node from outside it //
-					if(!event.altKey){
-					let distance = 150;
-					let distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+				if(!node.source){//judge is node or link
+						if(!event.altKey){
+						let distance = 150;
+						let distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
 
-					let newPos = node.x || node.y || node.z
-					? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
-					: { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+						let newPos = node.x || node.y || node.z
+						? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+						: { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
 
-					_this.Graph3d.cameraPosition(
-					newPos, // new position
-					node, // lookAt ({ x, y, z })
-					800  // ms transition duration
-					);
+						_this.Graph3d.cameraPosition(
+						newPos, // new position
+						node, // lookAt ({ x, y, z })
+						800  // ms transition duration
+						);
+					}
 				}
 				//------------------------------//
+			});
+		}
+		
+		delKeyUpHandler(){
+			let _this = this;
+			this.onDelKeyUp((node,event)=>{
+				node.hasOwnProperty("source")?_this.NWG.delLink(node):_this.NWG.delNode(node);
+				console.log("delete");
 			});
 		}
 	
