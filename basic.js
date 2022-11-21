@@ -90,8 +90,12 @@ class Basic{
     }
 	
 	updateGData(gdata){
-		this.gdata = gdata
-		this.graph.graphData(this.gdata);
+		this.gdata = gdata;
+		this.graph.linkCurvature('curvature').linkCurveRotation('rotation').graphData(this.gdata);
+	}
+	
+	curveDuplicateLinks(links){
+		
 	}
 }
 

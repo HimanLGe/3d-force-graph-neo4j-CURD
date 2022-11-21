@@ -127,18 +127,15 @@
 		
 		editLinkPanel(settings){
 			settings["apply"] = ()=>{
-				let labelsadd =  settings.labels["add"];
 				let propertiesadd =  settings.properties["add"];
 				let apply =  settings["apply"];
 				let del =  settings["delete"];
 
-				delete settings.labels["add"];
 				delete settings.properties["add"];
 				delete settings["apply"];
 				delete settings["delete"];
-				this.neo4jWithGraph.setNode(settings);
+				this.neo4jWithGraph.setLink(settings);
 				
-				settings.labels["add"] = labelsadd;
 				settings.properties["add"] = propertiesadd;
 				settings["apply"] = apply;
 				settings["delete"] = del;

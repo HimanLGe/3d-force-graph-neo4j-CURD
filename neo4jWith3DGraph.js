@@ -61,7 +61,8 @@
 		}
 		
 		async setLink(link){
-			await this.Connector.setLink(link);
+			let id = await this.Connector.setLink(link);
+			link.id = id;
 		}
 		
 		async delNode(node){

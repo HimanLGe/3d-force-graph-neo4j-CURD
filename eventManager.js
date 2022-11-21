@@ -257,7 +257,7 @@
 						let sprite = new _this.THREE.SpriteText(node.properties.name?node.properties.name:node.id);
 						sprite.material.depthWrite = false; // make sprite background transparent
 						sprite.color = node === _this.hoverNode ? 'orange' : 'green';
-						sprite.textHeight = 8;
+						sprite.textHeight = 5;
 						return sprite;
 					}else{
 						return false;

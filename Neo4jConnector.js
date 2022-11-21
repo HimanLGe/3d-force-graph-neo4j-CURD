@@ -121,13 +121,14 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
+				let newLinkId = -1;
 				node.name?null:node.name="node";
 				let cypherString = 'MATCH(n)-[';
 				
 					
 					cypherString += node.name;
 					
-					cypherString+="]-(m) WHERE id("
+					cypherString+="]->(m) WHERE id("
 					cypherString+=node.name;
 					cypherString+=")=";
 					cypherString+=node.id;
@@ -150,17 +151,18 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					
 					cypherString+=" WITH ";
 					cypherString+=node.name;
-					cypherString+=" DELETE ";
+					cypherString+=" ,id(r2) as id DELETE ";
 					cypherString+=node.name;
+					cypherString+=" return id ";
 					
 					
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
-						
+					await _this.session.run(cypherString).then((res)=>{
+						newLinkId = res.records[0].get("id").toNumber();
 					});
 				
 				await _this.session.close();
-				resolve();
+				resolve(newLinkId);
 			})(resolve,reject);
 		});
 	}
