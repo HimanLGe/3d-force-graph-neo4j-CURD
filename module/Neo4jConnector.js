@@ -1,9 +1,6 @@
+const neo4j = require('neo4j-driver');
 
-(function (){
-	
-	
-document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/neo4j-web.js" type="text/javascript" charset="utf-8"></script>');
-	class Neo4jConnector{
+class Neo4jConnector{
 	
 	constructor(url,name,password){
 		this.url = url;
@@ -15,14 +12,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		};
 		this.database = "";
 	}
-
-		connect(url, name, password) { 
-			this.url = url;
-			this.name = name;
-			this.password = password;
-			this.driver = neo4j.driver(url, neo4j.auth.basic(name, password));
-		}
-		
+	
 	setDatabase(db){
 		this.database = db;
 	}
@@ -355,16 +345,6 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		});
 		
 	}
-
-	async excuteCypher(cypherString){
-		let result = null;
-		await this.initSession();
-		await this.session.run(cypherString).then((res)=>{
-						result = res.records;
-					});
-		await this.session.close();
-		return result;
-	}
 	
 	initNode(){
 		let node = {
@@ -382,16 +362,34 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	initRelationship(){
 		let relationship = {
 			name:'',
-			lables:[
-			//"label","label2"
-			],
+			label:"linkto",
 			properties:{}
 		};
 		
 		return relationship;
 	}
+
+	async excuteCypher(cypherString){
+		let result = null;
+		await this.initSession();
+		await this.session.run(cypherString).then((res)=>{
+						result = res.records;
+					});
+		await this.session.close();
+		return result;
+	}
+
+	async concatNode(node1id,node2,relationship1){
+		let relationship1Label = relationship1.label==""?"":":"+relationship1.label;
+		let node2Labels = node2.labels.length == 0 ?"":":"+node2.labels.join(":");
+		let cypherString = `match (n1) where id(n1) = ${node1id} \
+		create (n2${node2Labels}${JSON.stringify(node2.properties).replace(/"([^"]+)":/g, '$1:')}) \
+		create (n1)-[r${relationship1Label}${JSON.stringify(relationship1.properties).replace(/"([^"]+)":/g, '$1:')}]->(n2)`;
+		await this.excuteCypher(cypherString);
+	}
 	
 }
 
-this.Connector = Neo4jConnector;
-})();
+module.exports = function(url,name,password){
+	return new Neo4jConnector(url,name,password);
+}

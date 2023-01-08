@@ -28,7 +28,8 @@
 				"HighLightLink",
 				"Hover",//Node or Link
 				"ClickNode",
-				"DelKeyUp"
+				"DelKeyUp",
+				"TabKeyUp"
 			]
 			
 			this.events = {};
@@ -79,8 +80,8 @@
 				this.Graph3d
 					.nodeColor(node => this.highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
 					.linkWidth(link => this.highlightLinks.has(link) ? 4 : 1)
-					.linkDirectionalParticles(link => this.highlightLinks.has(link) ? 4 : 0)
-					.linkDirectionalParticleWidth(4);
+					.linkDirectionalParticles(link => this.highlightLinks.has(link) ? 2 : 0)
+					.linkDirectionalParticleWidth(1);
 				
 				this.updateHighlight = function () {
 				  // trigger update of highlighted objects in scene
@@ -108,8 +109,7 @@
 			})
 			.nodeColor(node => this.selectedNodes.has(node) ? 'yellow' : 'grey');
 			
-			
-			
+
 			
 			this.Graph3d.onNodeHover((node)=>{
 				this.dispatchHighLightNode(node);
@@ -130,6 +130,11 @@
 			document.onkeyup = (e)=>{
 				console.log(e);
 				if(e.key =="Delete") this.dispatchDelKeyUp(this.currentNode,e);
+				
+				if(e.key =="Tab") {
+					
+					this.dispatchTabKeyUp(this.currentNode,e);
+					}
 			}
 			
 		}
@@ -140,6 +145,7 @@
 			this.hoverHandler();
 			this.clickNodeHandler();
 			this.delKeyUpHandler();
+			this.tabKeyUpHandler();
 		}
 		
 		judgeBackgroundDoubleClick(e){
@@ -292,7 +298,7 @@
 			this.onClickNode((node,event)=>{
 					_this.currentNode = node;
 				// Aim at node from outside it //
-				if(!node.source){//judge is node or link
+				/* if(!node.source){//judge is node or link
 						if(!event.altKey){
 						let distance = 150;
 						let distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
@@ -307,7 +313,7 @@
 						800  // ms transition duration
 						);
 					}
-				}
+				} */
 				//------------------------------//
 			});
 		}
@@ -317,6 +323,24 @@
 			this.onDelKeyUp((node,event)=>{
 				node.hasOwnProperty("source")?_this.NWG.delLink(node):_this.NWG.delNode(node);
 				console.log("delete");
+			});
+		}
+		
+		tabKeyUpHandler(){
+			let _this = this;
+			this.onTabKeyUp(async (n2,event)=>{
+				let pos = {x:n2.x,y:n2.y,z:n2.z};	
+				let node = this.basic.initNode();
+				node.name = "new"; //this will let 3dgraph make a tooltip text a
+				node.properties.name = "undefined";
+				['x','y','z'].forEach((axis)=>{
+					node[axis] = pos[axis];
+				});
+				
+				await this.NWG.addNodes([node]);
+				await this.NWG.addRelationships(node,{name:"rel",labels:["linkto"],properties:{name:"undefined"}},n2);
+				this.currentNode = node;
+				this.guiController.editLinkPanel(node);
 			});
 		}
 	

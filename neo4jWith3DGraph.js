@@ -19,7 +19,7 @@
 			if(!linkIdSet.has(r.get('link').identity.toNumber())){
 				linkIdSet.add(r.get('link').identity.toNumber());
 				let link = {...{source:r.get('source').toNumber(), target:r.get('target').toNumber(),id:r.get('link').identity.toNumber()},...r.get('link')};
-				link.properties.name?null:link.properties.name = "undefined";
+				link.properties.name?null:link.properties.name = 'undefined';
 				return link;
 			}
 			}).filter((i)=>{return i!=undefined});        
@@ -30,7 +30,7 @@
 			}
 			}).filter((i)=>{return i!=undefined});        
 			_this.Connector.session.close();
-			console.log(links.length+" links loaded in "+(new Date()-start)+" ms.")
+			console.log(links.length+' links loaded in '+(new Date()-start)+' ms.')
 			//const ids = new Set()
 			//links.forEach(l => {ids.add(l.source);ids.add(l.target);});
 			let gData = { nodes: nodes, links: links}

@@ -1,0 +1,1 @@
+nodemon -w ./ --ext "*.*" server.js

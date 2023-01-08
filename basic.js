@@ -77,7 +77,7 @@ class Basic{
       //nodes.splice(node.id, 1); // Remove node
 	  nodes = nodes.filter((n)=>{return n.id!=node.id})
       //nodes.forEach((n, idx) => { n.id = idx; }); // Reset node ids to array index
-      this.graph.graphData({ nodes, links });
+      this.updateGData({ nodes, links });
     }
 	
 	removeLink(node) {
@@ -86,9 +86,11 @@ class Basic{
       //nodes.splice(node.id, 1); // Remove node
 	  //nodes = nodes.filter((n)=>{return n.id!=node.id})
       //nodes.forEach((n, idx) => { n.id = idx; }); // Reset node ids to array index
-      this.graph.graphData({ nodes, links });
+      this.updateGData({ nodes, links });
     }
 	
+	
+	//don't call this.graph.graphData for setting data directly , it cause bug! i promise!
 	updateGData(gdata){
 		this.gdata = gdata;
 		this.graph.linkCurvature('curvature').linkCurveRotation('rotation').graphData(this.gdata);

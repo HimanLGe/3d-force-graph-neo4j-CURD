@@ -158,6 +158,23 @@
 			}
 			$(".dg.main").on("keyup",(e)=>{console.log(e)});
 		}
+		
+		changeDatabasePanel(settings){
+			
+			
+			
+			settings["add"] = ()=>{
+				var theResponse = window.prompt("database name");
+				settings[theResponse] = "";
+				settings = this.gui.applySettings(settings);
+				};
+			settings = this.gui.applySettings(settings);
+			settings.onxChange = (e)=>{console.log(e);};
+			if($(".property-name:contains('name')").next("div").children().val()=="undefined"){
+				$(".property-name:contains('name')").next("div").children().val("").focus();
+			}
+			$(".dg.main").on("keyup",(e)=>{console.log(e)});
+		}
 	}
 	
 	this.GUIController = GUIController;
