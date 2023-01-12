@@ -1,5 +1,10 @@
 {
   "dependencies": {
-    "neo4j-driver": "^5.3.0"
+    "@babel/parser": "^7.20.7",
+    "babel-generator": "^6.26.1",
+    "babel-traverse": "^6.26.0",
+    "body-parser": "^1.20.1",
+    "neo4j-driver": "^5.3.0",
+    "node-explorer": "^1.0.2"
   }
 }

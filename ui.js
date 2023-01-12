@@ -1,3 +1,5 @@
+
+
 function setUrl() {
     let url = document.getElementsByClassName("url")[0].value;
     let username = document.getElementsByClassName("username")[0].value;
@@ -15,6 +17,13 @@ function createDatabase() {
     
 }
 
+function clearDatabase() {
+    
+    window.neo4jConector.excuteCypher("match (n) detach delete (n)");
+    window.NWG.getAll();
+    
+}
+
 function setDatabase() {
     window.neo4jConector.setDatabase(document.getElementById("listDatabase").value);
     window.NWG.getAll();
@@ -23,6 +32,10 @@ function setDatabase() {
 
 function editUrl(){
     document.getElementsByClassName("editDatabase")[0].style.display = "block";
+}
+
+function selectFile(){
+    document.getElementsByClassName("fileManager")[0].style.display = "block";
 }
 
 async function switchDatabase(){
@@ -55,4 +68,36 @@ async function switchDatabase(){
    
 
     document.getElementsByClassName("switchDatabase")[0].style.display = "block";
+}
+
+function parsefile() {
+    
+
+    
+        
+        window.ajax(
+            {
+                url:"http://localhost/parsecode",
+                type:'post',
+                data:{
+                    
+                },
+                dataType:'json',
+                timeout:10000,
+                contentType:"application/json",
+                success:function(data){
+                    window.alert("success");
+                },
+                //异常处理
+                error:function(e){
+                    console.log(e);
+                }
+            }
+        );
+    
+
+    
+    
+
+    
 }

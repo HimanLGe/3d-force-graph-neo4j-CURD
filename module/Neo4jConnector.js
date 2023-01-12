@@ -24,16 +24,16 @@ class Neo4jConnector{
 	//it return the ids of nodes as a array
 	addNodes(nodes){
 		
-		return new Promise((resolve,reject)=>{
+		return new Promise(async (resolve,reject)=>{
 				let _this = this;
 				let nodeids = [];
-				(async function(resolve,reject){
+				
 				for(let i = 0 ; i<nodes.length;i++){
 					let cypherString = 'CREATE(';
 					let node = nodes[i];
 				
 					
-					cypherString += node.name;
+					cypherString += "n1";
 					for(let j = 0 ; j < node.labels.length;j++){
 						let label = node.labels[j];
 						cypherString += ':';
@@ -50,10 +50,10 @@ class Neo4jConnector{
 					cypherString+='}';
 					
 					cypherString+=") return id(";
-					cypherString+=node.name;
+					cypherString+="n1";
 					cypherString+=") as id";
 					await _this.initSession();
-					await _this.session.run(cypherString)._getOrCreatePromise()
+					await _this.session.run(cypherString)
 					.then((res)=>{
 						nodeids.push(res.records[0].get('id').toNumber());
 					});
@@ -61,7 +61,7 @@ class Neo4jConnector{
 				}
 			await _this.session.close();
 			resolve(nodeids);
-			})(resolve,reject);
+			
 		});
 	}
 	
@@ -379,13 +379,23 @@ class Neo4jConnector{
 		return result;
 	}
 
-	async concatNode(node1id,node2,relationship1){
-		let relationship1Label = relationship1.label==""?"":":"+relationship1.label;
-		let node2Labels = node2.labels.length == 0 ?"":":"+node2.labels.join(":");
-		let cypherString = `match (n1) where id(n1) = ${node1id} \
-		create (n2${node2Labels}${JSON.stringify(node2.properties).replace(/"([^"]+)":/g, '$1:')}) \
-		create (n1)-[r${relationship1Label}${JSON.stringify(relationship1.properties).replace(/"([^"]+)":/g, '$1:')}]->(n2)`;
-		await this.excuteCypher(cypherString);
+	async concatNode(node1id, node2, relationship1) {
+		
+			if (relationship1 == null) {
+				relationship1 = {};
+				relationship1.label = "linkto";
+			}
+			let relationship1Label = relationship1.label == "" ? "" : ":" + relationship1.label;
+			let node2Labels = node2.labels.length == 0 ? "" : ":" + node2.labels.join(":");
+			let cypherString = `match (n1) where id(n1) = ${node1id} \
+		create (n2${node2Labels}${JSON.stringify(node2.properties == undefined ? {} : node2.properties).replace(/"([^"]+)":/g, '$1:')}) \
+		create (n1)-[r${relationship1Label}${JSON.stringify(relationship1.properties == undefined ? {} : relationship1.properties).replace(/"([^"]+)":/g, '$1:')}]->(n2) return id(n2)`;
+			let res = await this.excuteCypher(cypherString);
+			
+		
+			return res[0].get("id(n2)").toNumber();
+		
+		
 	}
 	
 }

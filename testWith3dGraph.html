@@ -77,6 +77,22 @@
 		top:50%;
 		border: 5px solid gainsboro;
 	  }
+
+    .fileManager{
+      width: 70%;
+      height: 70%;
+      top:10%;
+    }
+
+    .fileManager iframe{
+      width: 100%;
+      height: 100%;
+    }
+
+    .fileManager button{
+      float: right;
+      
+    }
     </style>
   </head>
   <body>
@@ -95,7 +111,14 @@
         <li class="drop-down">
           <a href="#">程序</a>
           <ul class="drop-down-content">
-            <li><a onclick="" href="#">打开</a></li>
+            <li><a onclick="selectFile()" href="#">打开</a></li>
+            
+          </ul>
+        </li>
+        <li class="drop-down">
+          <a href="#">编辑</a>
+          <ul class="drop-down-content">
+            <li><a onclick="clearDatabase()" href="#">清空</a></li>
             
           </ul>
         </li>
@@ -115,6 +138,12 @@
 		<select  id="listDatabase"></select>
     <p><button onclick="setDatabase()" type="button">确定</button></p>
 	</dialog>
+
+  <dialog class="fileManager"> 
+		<iframe src="explorer"></iframe>
+    <button onclick="document.getElementsByClassName('fileManager')[0].style.display = 'none'" type="button">关闭</button>
+	</dialog>
+
   </body>
   <script src="./Neo4jConnector.js"></script>
   <script src="./basic.js"></script>
@@ -128,9 +157,13 @@
   <script src="./GUI.js"></script>
   <script src="./GUIController.js"></script>
   <script src="./ui.js"></script>
+  <script src="./ajax.js"></script>
   <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
   <script>
     (async () => {
+
+      window.ajax = ajax;
+
       //ADD three-spritetext TO THREE
       THREE.SpriteText = SpriteText;
       // initialize Neo4jConnector //

@@ -2,9 +2,27 @@ var url = require("url"),
     fs = require("fs"),
     http = require("http"),
     path = require("path");
-	
+var express = require('express');
+var querystring = require('querystring');
+var util = require('util');
 var join = require('path').join;
+var bodyParser = require('body-parser');
 
+
+var Neo4jConnector = require("./module/Neo4jConnector");
+var connector = Neo4jConnector("neo4j+s://9ab5a65f.databases.neo4j.io","neo4j","jx0AdI1o7vRn1x1T5o5eLJNtmB30rRjA5sZNk4IKI_Y");
+var parser = require("./Parser/parser");
+//file explorer controller
+var controller = require('./file_explorer/node-explorer/controller');
+var app = express();
+var dir = process.cwd();
+
+app.use(express.static(dir));
+app.use(express.static(join(dir,"file_explorer/node-explorer")));
+app.use(express.static(__dirname));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }))
 
 function getJsonFiles(jsonPath){
     let jsonFiles = [];
@@ -26,55 +44,28 @@ function getJsonFiles(jsonPath){
 	return jsonFiles;
 }
 
+var server = http.createServer(app).listen(80);
 
-http.createServer(function (req, res) {
-	console.log("get Request:"+req.url);
-    var pathname = __dirname + url.parse("/"+req.url).pathname;//资源指向dist目录
-    if (path.extname(pathname) == "") {
-        pathname += "/";
-    }
-    if (pathname.charAt(pathname.length - 1) == "/") {
-        pathname += "test.html";
-    }
-	if (req.url=="/filelist"){
-		res.writeHead(200, {"Content-Type": "text/json"});
-		let list = getJsonFiles("example");
-		res.end(JSON.stringify(list));
-		return;
-	}
-    fs.exists(pathname, function (exists) {
-        if (exists) {
-            switch(path.extname(pathname)){
-                case ".html":
-                    res.writeHead(200, {"Content-Type": "text/html"});
-                    break;
-                case ".js":
-                    res.writeHead(200, {"Content-Type": "text/javascript"});
-                    break;
-                case ".css":
-                    res.writeHead(200, {"Content-Type": "text/css"});
-                    break;
-                case ".gif":
-                    res.writeHead(200, {"Content-Type": "image/gif"});
-                    break;
-                case ".jpg":
-                    res.writeHead(200, {"Content-Type": "image/jpeg"});
-                    break;
-                case ".png":
-                    res.writeHead(200, {"Content-Type": "image/png"});
-                    break;
-                default:
-                    res.writeHead(200, {"Content-Type": "application/octet-stream"});
-            }
-            fs.readFile(pathname, function (err, data) {
-                res.end(data);
-            });
-        } else {
-            res.writeHead(404, {
-                "Content-Type": "text/html"
-            });
-            res.end("<h1>404 Not Found</h1>");
-        }
-    });
-}).listen(80);
+app.get('/filelist', function(req, res) {
+    let list = getJsonFiles("example");
+    res.end(JSON.stringify(list));
+});
+  
+app.post('/parsecode', async function (req, res) {
+    let params = req.body;
+    let path = params.path;
+    await parser.parse(connector, path);
+    res.end(util.inspect(params));
+});
+  
+//file explorer handler
+app.get('/files', function(req, res) {
+    controller.getFiles(req, res, dir);
+  });
+  
+app.get('/explorer', function(req, res) {
+res.redirect('file_explorer/node-explorer/lib/index.html');
+});
+
+
 console.log("监听80端口");

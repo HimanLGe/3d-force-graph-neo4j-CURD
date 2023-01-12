@@ -1,0 +1,33 @@
+{
+  "name": "node-explorer",
+  "author": "Ignacio Anaya <ignacio.anaya89@gmail.com>",
+  "version": "1.0.2",
+  "description": "A file explorer in your browser served with NodeJS",
+  "keywords": [
+    "filebrowser",
+    "file browser",
+    "file explorer",
+    "fileexplorer"
+  ],
+  "bin": {
+    "node-explorer": "./node-explorer.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ianaya89/node-explorer.git"
+  },
+  "dependencies": {
+    "colors": "^1.1.2",
+    "commander": "~2.3",
+    "express": "~4.4",
+    "lodash": "~2.4"
+  },
+  "devDependencies": {
+    "mocha": "1.20.1"
+  },
+  "main": "node-explorer",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "license": "MIT"
+}

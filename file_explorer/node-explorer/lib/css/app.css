@@ -1,0 +1,22 @@
+footer {
+  position: fixed;
+  left: 0px;
+  bottom: 0px;
+  height: 80px;
+  width: 100%;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: right;
+}
+
+ul {
+  list-style-type: none;
+}
+
+.up, .dir {
+  cursor: pointer;
+}
+
+input[type="search"] {
+  margin-top: 15px;
+}
