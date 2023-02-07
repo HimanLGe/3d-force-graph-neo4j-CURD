@@ -93,6 +93,12 @@
       float: right;
       
     }
+
+    .selectBox {
+				border: 1px solid #55aaff;
+				background-color: rgba(75, 160, 255, 0.3);
+				position: fixed;
+			}
     </style>
   </head>
   <body>
@@ -159,18 +165,35 @@
   <script src="./ui.js"></script>
   <script src="./ajax.js"></script>
   <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
-  <script>
-    (async () => {
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import { SelectionBox } from './three-selectionbox.js';
+    import { SelectionHelper } from './three-selectionhelper.js';
+
+
+    
 
       window.ajax = ajax;
+      
 
       //ADD three-spritetext TO THREE
       THREE.SpriteText = SpriteText;
+      THREE.SelectionBox = SelectionBox;
+      THREE.SelectionHelper = SelectionHelper;
+      
       // initialize Neo4jConnector //
-      a = new Connector(
-        "neo4j+s://9ab5a65f.databases.neo4j.io",
+      let a = new Connector(
+        "neo4j://localhost:7687",
         "neo4j",
-        "jx0AdI1o7vRn1x1T5o5eLJNtmB30rRjA5sZNk4IKI_Y"
+        "AGCF3xJumbfJD-b"
       );
       window.neo4jConector = a;
       a.setDatabase("neo4j");
@@ -182,12 +205,12 @@
       //-------------------------//
 
       // reference others code //
-      Graph = ForceGraph3D()(document.getElementById("3d-graph"));
+      let Graph = ForceGraph3D()(document.getElementById("3d-graph"));
 
       //-------------------------//
 
       // initialize basic //
-      basic = new Basic(Graph);
+      let basic = new Basic(Graph);
       //init a node
       //node = a.initNode();
       //node.name = "new";
@@ -196,7 +219,7 @@
       //------------------//
 
       // test neo4jWith3DGraph.js //
-      NWG = new neo4jWith3DGraph(basic, a);
+      let NWG = new neo4jWith3DGraph(basic, a);
       window.NWG = NWG;
       NWG.getAll();
       //node.name = "new2";
@@ -208,13 +231,13 @@
       //--------------------------//
 
       // initialize THREEUtils //
-      utils = new THREEUtils(this);
+      let utils = new THREEUtils(self);
       //-------------------------//
 
       // init GUI //
       const datgui = new dat.GUI();
       let gui = new GUI(datgui);
-      let guiController = new GUIController(gui, NWG, $, this);
+      let guiController = new GUIController(gui, NWG, $, self);
       //----------//
 
       // DO NOT BIND GRAPH EVENT THERE! BIND IN EVENTMANAGER!//
@@ -222,7 +245,7 @@
       //---------------------------------//
 
       // initialize EventManager //
-      eventManager = new EventManager(
+      let eventManager = new EventManager(
         document.getElementById("3d-graph"),
         Graph,
         guiController,
@@ -232,6 +255,6 @@
         THREE
       );
       //-------------------------//
-    })();
+    
   </script>
 </html>

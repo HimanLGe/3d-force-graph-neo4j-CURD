@@ -22,17 +22,9 @@ class Basic{
 	
 	initLink(sourceid,targetid){
 		let link = {
-			source:source,
-			target:target
-			//name:'',
-			//lables:[
-			//{
-				//name:'',
-				//properties:{
-				//name:value
-			//}
-			//}
-			//]
+			source:sourceid,
+			target:targetid
+			
 		};
 		
 		return link;
@@ -87,7 +79,55 @@ class Basic{
 	  //nodes = nodes.filter((n)=>{return n.id!=node.id})
       //nodes.forEach((n, idx) => { n.id = idx; }); // Reset node ids to array index
       this.updateGData({ nodes, links });
-    }
+	}
+	
+	concatNode(node1id,node2,rel){
+		let nodesAdded = [];
+		
+		nodesAdded.push(node2);
+
+		let linksAdded = [];
+		let link = this.initLink(node1id, node2.id);
+		link = { ...link, ...rel };
+			
+		linksAdded.push({...link});
+		
+		
+		
+		let gdata = {
+			nodes:[...this.gdata.nodes,...nodesAdded],
+			links:[...this.gdata.links,...linksAdded]
+		};
+		this.updateGData(gdata);
+	}
+
+	getNodeById(id) { 
+		
+		let nodes = this.gdata.nodes.filter((o) => {
+			if (o.id == id) return true;
+
+		});
+		if (nodes.length == 0) {
+			return undefined;
+		}
+		else { 
+			return nodes[0];
+		}
+	}
+
+	getLinkById(id) { 
+		
+		let links = this.gdata.links.filter((o) => {
+			if (o.id == id) return true;
+
+		});
+		if (links.length == 0) {
+			return undefined;
+		}
+		else { 
+			return links[0];
+		}
+	}
 	
 	
 	//don't call this.graph.graphData for setting data directly , it cause bug! i promise!

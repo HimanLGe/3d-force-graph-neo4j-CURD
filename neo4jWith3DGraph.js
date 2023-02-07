@@ -74,6 +74,13 @@
 			await this.Connector.delLink(node);
 			this.graphManager.removeLink(node);
 		}
+
+		async concatNode(node1id, node2, rel) { 
+			let r = await this.Connector.concatNode(node1id, node2, rel);
+			node2.id = r.node2id;
+			rel.id = r.relationshipid;
+			this.graphManager.concatNode(node1id, node2, rel);
+		}
 	}
 	
 	this.neo4jWith3DGraph = neo4jWith3DGraph;

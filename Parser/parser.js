@@ -22,7 +22,7 @@ async function parse(connector,fpath) {
   traverse(ast, {
   
     FunctionDeclaration: function (path) {
-    
+      
     },
     VariableDeclaration: function (path) {
     
@@ -61,7 +61,33 @@ async function parse(connector,fpath) {
     
     },
     ExpressionStatement: function (path) {
-    
+      //if is a function call , get its paramters , search them in neo4j ,connect the params and this function call
+      let params = [];
+      let node = connector.initNode();
+      if (path.node.expression.type == "CallExpression") {
+        node.properties.name = path.node.expression.callee.name;
+        params = path.node.expression.arguments
+      }
+      
+      else { 
+        node.properties.name = "Unknown ExpressionStatement";
+      }
+      connector.addNodes([node]).then(async res => {
+        let fNodeId = res[0];
+        
+        let rel = connector.initRelationship();
+        rel.label = "param";
+        for (let i = 0; i < params.length; i++) { 
+          if (params[i].type == "Identifier") {
+            let paramNodeId = await connector.findNearestNodeIdByIdAndProps(fNodeId, { name: params[i].name });
+            if (paramNodeId == null) { }
+            else {
+              await connector.addRelationship(fNodeId, rel, paramNodeId);
+            }
+          }
+        }
+      });
+      
     },
     Statement: function (path) {
       console.log(path.node);

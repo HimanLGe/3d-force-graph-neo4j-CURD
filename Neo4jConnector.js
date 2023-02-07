@@ -14,6 +14,8 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 			addNodesFinish:"Neo4jConnectoraddNodesFinish"
 		};
 		this.database = "";
+		this.taskCypherList = [];
+		this.runningFlag = false;
 	}
 
 		connect(url, name, password) { 
@@ -63,9 +65,9 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+=node.name;
 					cypherString+=") as id";
 					await _this.initSession();
-					await _this.session.run(cypherString)._getOrCreatePromise()
+					await _this.runCypherTask(cypherString)
 					.then((res)=>{
-						nodeids.push(res.records[0].get('id').toNumber());
+						nodeids.push(res[0].get('id').toNumber());
 					});
 
 				}
@@ -112,7 +114,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					}
 					
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -164,8 +166,8 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					
 					
 					await _this.initSession();
-					await _this.session.run(cypherString).then((res)=>{
-						newLinkId = res.records[0].get("id").toNumber();
+					await _this.runCypherTask(cypherString).then((res)=>{
+						newLinkId = res[0].get("id").toNumber();
 					});
 				
 				await _this.session.close();
@@ -199,7 +201,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString += node.name;
 					});
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -227,7 +229,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+=" DETACH DELETE ";
 					cypherString += "(n)";
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -254,7 +256,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+=" DELETE ";
 					cypherString += "(n)";
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -338,8 +340,8 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		
 		
 		await _this.initSession();
-		await _this.session.run(cypherString).then((res)=>{
-						res.records.forEach((record)=>{
+		await _this.runCypherTask(cypherString).then((res)=>{
+						res.forEach((record)=>{
 							relids.push({
 									source:record.get("node1_id").toNumber(),
 									id:record.get('id').toNumber(),
@@ -354,13 +356,63 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 			})(resolve,reject);
 		});
 		
+		}
+		
+	async concatNode(node1id, node2, relationship1) {
+		
+			if (relationship1 == null) {
+				relationship1 = {};
+				relationship1.label = "linkto";
+			}
+			let relationship1Label = relationship1.label == "" ? "" : ":" + relationship1.label;
+			let node2Labels = node2.labels.length == 0 ? "" : ":" + node2.labels.join(":");
+			let cypherString = `match (n1) where id(n1) = ${node1id} \
+		create (n2${node2Labels}${JSON.stringify(node2.properties == undefined ? {} : node2.properties).replace(/"([^"]+)":/g, '$1:')}) \
+		create (n1)-[r${relationship1Label}${JSON.stringify(relationship1.properties == undefined ? {} : relationship1.properties).replace(/"([^"]+)":/g, '$1:')}]->(n2) return id(n2),id(r)`;
+			let res = await this.excuteCypher(cypherString);
+			
+		
+		return { node2id: res[0].get("id(n2)").toNumber(), relationshipid: res[0].get("id(r)").toNumber() };
+		
+		
+		}
+		
+		async shortestPath2Node(node1id,node2id) { 
+			let cypherString = `match (n1),(n2) with (n1),(n2)  where id(n1)=${node1id} and id(n2)=${node2id} match p=shortestPath((n1)-[*]-(n2)) \
+			RETURN [x in nodes(p) | id(x)] as nodeids ,[y in relationships(p)|id(y)] as relids`
+			let res = await this.excuteCypher(cypherString);
+			return { nodeids: res[0].get("nodeids"),  relids: res[0].get("relids") };
+		}
+
+	//TODO add Promise to adapt .then usage
+	//one instance run one cypher query at a time
+	runCypherTask(cypherString) { 
+		return new Promise(async (resolve, reject) => {
+			let result = undefined;
+
+		
+			this.taskCypherList.push(cypherString);
+			while (this.taskCypherList[this.taskCypherList.length-1] != cypherString || this.runningFlag == true) {
+				await this.sleep(100);
+			
+			}
+			let taskCypher = this.taskCypherList.pop();
+			this.runningFlag = true;
+			await this.initSession();
+			await this.session.run(taskCypher).then((res) => {
+				result = res.records;
+			});
+			await this.session.close();
+			this.runningFlag = false;
+			resolve(result);
+		});
 	}
 
 	async excuteCypher(cypherString){
 		let result = null;
 		await this.initSession();
-		await this.session.run(cypherString).then((res)=>{
-						result = res.records;
+		await this.runCypherTask(cypherString).then((res)=>{
+						result = res;
 					});
 		await this.session.close();
 		return result;
@@ -382,14 +434,17 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	initRelationship(){
 		let relationship = {
 			name:'',
-			lables:[
-			//"label","label2"
-			],
+			label:"linkto",
 			properties:{}
 		};
 		
 		return relationship;
 	}
+		
+	sleep(time) {
+		return new Promise(resolve =>
+			setTimeout(resolve,time)
+		) }
 	
 }
 

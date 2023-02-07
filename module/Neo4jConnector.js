@@ -11,6 +11,32 @@ class Neo4jConnector{
 			addNodesFinish:"Neo4jConnectoraddNodesFinish"
 		};
 		this.database = "";
+		this.taskCypherList = [];
+		this.runningFlag = false;
+	}
+
+	//TODO add Promise to adapt .then usage
+	//one instance run one cypher query at a time
+	runCypherTask(cypherString) { 
+		return new Promise(async (resolve, reject) => {
+			let result = undefined;
+
+		
+			this.taskCypherList.push(cypherString);
+			while (this.taskCypherList[this.taskCypherList.length-1] != cypherString || this.runningFlag == true) {
+				await this.sleep(100);
+			
+			}
+			let taskCypher = this.taskCypherList.pop();
+			this.runningFlag = true;
+			await this.initSession();
+			await this.session.run(taskCypher).then((res) => {
+				result = res.records;
+			});
+			await this.session.close();
+			this.runningFlag = false;
+			resolve(result);
+		});
 	}
 	
 	setDatabase(db){
@@ -53,9 +79,9 @@ class Neo4jConnector{
 					cypherString+="n1";
 					cypherString+=") as id";
 					await _this.initSession();
-					await _this.session.run(cypherString)
+					await _this.runCypherTask(cypherString)
 					.then((res)=>{
-						nodeids.push(res.records[0].get('id').toNumber());
+						nodeids.push(res[0].get('id').toNumber());
 					});
 
 				}
@@ -102,7 +128,7 @@ class Neo4jConnector{
 					}
 					
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -154,8 +180,8 @@ class Neo4jConnector{
 					
 					
 					await _this.initSession();
-					await _this.session.run(cypherString).then((res)=>{
-						newLinkId = res.records[0].get("id").toNumber();
+					await _this.runCypherTask(cypherString).then((res)=>{
+						newLinkId = res[0].get("id").toNumber();
 					});
 				
 				await _this.session.close();
@@ -189,7 +215,7 @@ class Neo4jConnector{
 					cypherString += node.name;
 					});
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -217,7 +243,7 @@ class Neo4jConnector{
 					cypherString+=" DETACH DELETE ";
 					cypherString += "(n)";
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -244,7 +270,7 @@ class Neo4jConnector{
 					cypherString+=" DELETE ";
 					cypherString += "(n)";
 					await _this.initSession();
-					await _this.session.run(cypherString).then(()=>{
+					await _this.runCypherTask(cypherString).then(()=>{
 						
 					});
 				
@@ -255,7 +281,7 @@ class Neo4jConnector{
 	}
 	
 	
-	addRelationships(node1,relation,node2){
+	addRelationship(node1id,relation,node2id){
 		
 		
 		return new Promise((resolve,reject)=>{
@@ -271,7 +297,7 @@ class Neo4jConnector{
 		cypherString+="WHERE id(";
 		cypherString += "node1";
 		cypherString+=") = "
-		cypherString += node1.id
+		cypherString += node1id
 		cypherString+=" MATCH(";
 		
 		cypherString += "node2";
@@ -279,14 +305,14 @@ class Neo4jConnector{
 		cypherString+="WHERE id(";
 		cypherString += "node2";
 		cypherString+=") = "
-		cypherString += node2.id
+		cypherString += node2id
 		
 		cypherString+= ' CREATE(';
 		
 			
 			cypherString += "node1";
 			cypherString +=")-[";
-				cypherString += relation.name;
+				cypherString += "rel";
 				if(relation.labels!=undefined){
 					relation.labels.forEach((label)=>{
 						
@@ -316,20 +342,20 @@ class Neo4jConnector{
 		cypherString+=") as node1_id,";
 		
 		cypherString+="id(";
-		cypherString+=relation.name;
+		cypherString+="rel";
 		cypherString+=") as id,";
 		
 		cypherString+="id(";
 		cypherString+="node2";
 		cypherString+=") as node2_id,";
 		
-		cypherString+=relation.name;
+		cypherString+="rel";
 		cypherString+=" as link";
 		
 		
 		await _this.initSession();
-		await _this.session.run(cypherString).then((res)=>{
-						res.records.forEach((record)=>{
+		await _this.runCypherTask(cypherString).then((res)=>{
+						res.forEach((record)=>{
 							relids.push({
 									source:record.get("node1_id").toNumber(),
 									id:record.get('id').toNumber(),
@@ -372,8 +398,8 @@ class Neo4jConnector{
 	async excuteCypher(cypherString){
 		let result = null;
 		await this.initSession();
-		await this.session.run(cypherString).then((res)=>{
-						result = res.records;
+		await this.runCypherTask(cypherString).then((res)=>{
+						result = res;
 					});
 		await this.session.close();
 		return result;
@@ -397,6 +423,31 @@ class Neo4jConnector{
 		
 		
 	}
+
+	async findNearestNodeIdByIdAndProps(node1Id, node2Props) { 
+		let keys = Object.keys(node2Props);
+		let conditions = "";
+		for (let i = 0; i < keys.length; i++) { 
+			conditions+=`AND end.${keys[i]} contains "${node2Props[keys[i]]}" ` //similarity
+		}
+		//unhandle not found situation
+		let cypherString = `MATCH (start), (end),\
+		p=shortestPath((start)-[*]-(end))\
+		WHERE id(start)=${node1Id} ${conditions}
+		RETURN p`
+
+		let res = await this.excuteCypher(cypherString);
+		if (res.length == 0) { 
+			return null;
+		}
+		return res[0].get("id(n2)").toNumber();
+
+	}
+
+	sleep(time) {
+		return new Promise(resolve =>
+		  setTimeout(resolve,time)
+	 ) }
 	
 }
 
