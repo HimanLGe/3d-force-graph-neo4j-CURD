@@ -12,7 +12,7 @@
         z-index: 1; /* 让 UI 在 3D 元素之上 */
       }
 
-      ul ul {
+      ul ul.drop-down-content {
         display: none;
       }
 
@@ -158,6 +158,7 @@
   <script src="./THREEUtils.js"></script>
   <script src="./three.js"></script>
   <script src="./three-spritetext.min.js"></script>
+  
 
   <script src="./dat.gui.js"></script>
   <script src="./GUI.js"></script>
@@ -177,8 +178,9 @@
   <script type="module">
     import { SelectionBox } from './three-selectionbox.js';
     import { SelectionHelper } from './three-selectionhelper.js';
+    window.GraphApp = {};//global variable
 
-
+    
     
 
       window.ajax = ajax;
@@ -206,7 +208,7 @@
 
       // reference others code //
       let Graph = ForceGraph3D()(document.getElementById("3d-graph"));
-
+      window.GraphApp.Graph = Graph;
       //-------------------------//
 
       // initialize basic //
@@ -221,7 +223,7 @@
       // test neo4jWith3DGraph.js //
       let NWG = new neo4jWith3DGraph(basic, a);
       window.NWG = NWG;
-      NWG.getAll();
+      await NWG.getAll();
       //node.name = "new2";
       //NWG.addNodes([node]);
       //setInterval(()=>{
@@ -237,6 +239,7 @@
       // init GUI //
       const datgui = new dat.GUI();
       let gui = new GUI(datgui);
+      window.GraphApp.gui = gui;
       let guiController = new GUIController(gui, NWG, $, self);
       //----------//
 
@@ -254,7 +257,38 @@
         utils,
         THREE
       );
+      window.GraphApp.eventManager = eventManager;
       //-------------------------//
+
+      
+
+    var pluginList = [];
+    window.GraphApp.plugins = {};
+    window.GraphApp.pluginList = pluginList;
+    for(let p of pluginList){
+      window.GraphApp.plugins[p] = await import(`./plugins/${p}.js`);
+      window.GraphApp.plugins[p] = window.GraphApp.plugins[p].default;
+      window.GraphApp.plugins[p] = new window.GraphApp.plugins[p]();
+    }
+
+
+    let featureList = [
+      "fold",
+      "filter"
+    ]
+    window.GraphApp.features = {};
+    for(let p of featureList){
+      window.GraphApp.features[p] = await import(`./features/${p}.js`);
+      window.GraphApp.features[p] = window.GraphApp.features[p].default;
+      window.GraphApp.features[p] = new window.GraphApp.features[p]();
+    }
+    // let Fold = await import("./features/fold.js");
+    // Fold = Fold.default;
+    // window.GraphApp.Fold = Fold;
+
+    // //load node fold feature //
+    // let fold = new Fold();
+    // //-----------------------//
     
   </script>
 </html>

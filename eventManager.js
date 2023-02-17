@@ -16,18 +16,32 @@
 			//background click->true;interval times up -> false
 			this.inDoubuleClickIntervalFlag = false;
 			this.keyListener = {};//if KeyA press, keyListener.keyA = true
+			this.focusMode = true;
 
 			this.selectionBox = new THREE.SelectionBox( this.Graph3d.camera(), this.Graph3d.scene() );
 			this.helper = new THREE.SelectionHelper(this.Graph3d.renderer(), 'selectBox');
 			//this.helper.dispose();
+
+			this.nodeColorRule = [];
+			this.linkColorRule = [];
+			
+			this.Graph3d.nodeColor(this.executeNodeColorRules);
+			this.Graph3d.linkColor(this.executeLinkColorRules);
 			
 
-
+			//when graph event dispatched,run following Slot
+			this.BackgroundClickdispatchSlot = [];
+			this.nodeClickdispatchSlot = [];
+			this.nodeDragdispatchSlot = [];
+			this.nodeDragEnddispatchSlot = [];
+			this.nodeHoverdispatchSlot = [];
+			this.linkHoverdispatchSlot = [];
+			this.linkClickdispatchSlot = [];
 			
 			
 			this.initEventEnvironmentVaribles();
 			
-			this.registerEvent();
+			this.registerEvents();
 			
 			//event list
 			this.eventList = [
@@ -42,7 +56,9 @@
 				"AltKeyUpAndDoubleClicked",
 				"KeyXPress",
 				"MouseDrag"
-			]
+			];
+
+			
 			
 			this.events = {};
 			// auto register onEvent and dispatchEvent
@@ -63,7 +79,9 @@
 				}
 			});
 			//register event handler
-			this.registerHandeler();
+			this.registerHandlers();
+
+			
 			
 		}
 		
@@ -90,10 +108,11 @@
 				this.hoverNode = null;
 				
 				this.Graph3d
-					.nodeColor(node => this.highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'rgba(0,255,255,0.6)')
 					.linkWidth(link => this.highlightLinks.has(link)||_this.selectedLinks.has(link) ? 4 : 1)
 					.linkDirectionalParticles(link => this.highlightLinks.has(link)||_this.selectedLinks.has(link) ? 2 : 0)
-					.linkDirectionalParticleWidth(1);
+				.linkDirectionalParticleWidth(1);
+			
+			this.addNodeColorRule(node => this.highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'default');
 				
 				this.updateHighlight = function () {
 				  // trigger update of highlighted objects in scene
@@ -132,13 +151,13 @@
 				if (!_this.keyListener.ControlLeft) return;//ctrl toggle multiply select
 
 				_this.selectedNodes.clear();
-				_this.Graph3d.nodeColor(node => _this.selectedNodes.has(node) ? 'yellow' : 'grey');
+				
 				for (const item of _this.selectionBox.collection) {
 					if (item.material.type == "MeshLambertMaterial") {
 						item.material.emissive.set(0x000000);
 					}
 				}
-				_this.Graph3d.nodeColor(node => _this.selectedNodes.has(node) ? 'yellow' : 'grey');
+				_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());
 				_this.selectionBox.startPoint.set(
 						( event.clientX / window.innerWidth ) * 2 - 1,
 						- ( event.clientY / window.innerHeight ) * 2 + 1,
@@ -155,7 +174,7 @@
 								_this.selectionBox.collection[i].material.emissive.set(0x000000); 
 							}
 					}
-					_this.Graph3d.nodeColor(node => _this.selectedNodes.has(node) ? 'yellow' : 'grey');
+					_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());
 		
 						_this.selectionBox.endPoint.set(
 								( event.clientX / window.innerWidth ) * 2 - 1,
@@ -172,7 +191,7 @@
 								_this.selectedNodes.add(allSelected[i].__data);
 							}
 					}
-					_this.Graph3d.nodeColor(node => _this.selectedNodes.has(node) ? 'yellow' : 'grey');//refresh color
+					_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());//refresh color
 				}
 		
 			} );
@@ -192,31 +211,36 @@
 						_this.selectedNodes.add(allSelected[i].__data);
 					}
 				}
-				_this.Graph3d.nodeColor(node => _this.selectedNodes.has(node) ? 'yellow' : 'grey');//refresh color
+				_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());//refresh color
 			});
 			
-			//drag selected node together
-			_this.Graph3d.onNodeDrag((n, t) => {
-				_this.Graph3d.controls().enabled = false;//disable orbit control
-				_this.selectedNodes.forEach((node) => { 
-					if (node == n) return;
-					node.x += t.x;
-					node.y += t.y;
-					node.z += t.z;
-				})
-				
-			}).onNodeDragEnd(node => {
-				_this.Graph3d.controls().enabled = true;//disable orbit control
-			});
+			
 	
 	
 		
 		
 			
 		}
-		
-		registerEvent(){
+
+		registerEvent(evtname,customFunc) { 
+			this.eventList.push(evtname);
+			let event = {
+				todo:[]//
+			};
+			this.events[evtname] = event;
+			this["dispatch"+evtname] = (e1,e2)=>{
+				this.events[evtname].todo.forEach((f)=>{
+					f(e1,e2);
+				});
+			}
 			
+			
+			this.events[evtname].todo.push(customFunc);
+			
+		}
+		
+		registerEvents(){
+			let _this = this;
 			//register BackgroundDoubleClick
 			this.Graph3d.onBackgroundClick((e)=>{
 				this.judgeBackgroundDoubleClick(e);
@@ -224,28 +248,80 @@
 			
 			//register AltKeyUpAndTwoNodesClicked
 			this.Graph3d.onNodeClick((node, event) => {
+				for (let handler of this.nodeClickdispatchSlot) {
+					handler(node,event);
+				}
+				
+			});
+			this.nodeClickdispatchSlot.push((node,event) => {
 				this.guiController.editNodePanel(node);
 				this.judgeAltKeyUpAndTwoNodesClicked(node, event);
 				this.dispatchClickNode(node, event);
-			})
-				.nodeColor(node => this.selectedNodes.has(node) ? 'yellow' : 'grey');
+			});
+
+			this.addNodeColorRule(node =>
+				_this.selectedNodes.has(node) ? 'yellow' : 'default'
+			);
 			
 
 			
-			this.Graph3d.onNodeHover((node)=>{
+			this.Graph3d.onNodeHover((node) => {
+				for (let handler of this.nodeHoverdispatchSlot) {
+					handler(node);
+				}
+				
+			});
+			this.nodeHoverdispatchSlot.push((node) => { 
 				this.dispatchHighLightNode(node);
 				this.dispatchHover(node);
 			});
 			
-			this.Graph3d.onLinkClick((link,event)=>{
+			this.Graph3d.onLinkClick((link, event) => {
+				for (let handler of this.linkClickdispatchSlot) {
+					handler(link,event);
+				}
+				
+			});
+			this.linkClickdispatchSlot.push((link, event) => { 
 				this.guiController.editLinkPanel(link);
 				this.dispatchClickNode(link,event);
 			});
 			
-			this.Graph3d.onLinkHover((link)=>{
+			this.Graph3d.onLinkHover((link) => {
+				for (let handler of this.linkHoverdispatchSlot) {
+					handler(link);
+				}
+				
+				
+			});
+			this.linkHoverdispatchSlot.push((link) => { 
 				this.dispatchHighLightLink(link);
 				this.dispatchHover();
-				
+			});
+
+			//drag selected node together
+			this.Graph3d.onNodeDrag((n, t) => {
+				for (let handler of this.nodeDragdispatchSlot) {
+					handler(n,t);
+				}
+			}).onNodeDragEnd(node => {
+				for (let handler of this.nodeDragEnddispatchSlot) {
+					handler(node);
+				}
+			});
+
+			this.nodeDragdispatchSlot.push((n, t) => { 
+				this.Graph3d.controls().enabled = false;//disable orbit control
+				this.selectedNodes.forEach((node) => { 
+					if (node == n) return;
+					node.x += t.x;
+					node.y += t.y;
+					node.z += t.z;
+				})
+			});
+
+			this.nodeDragEnddispatchSlot.push((n) => {
+				this.Graph3d.controls().enabled = true;//disable orbit control
 			});
 			
 			document.onkeyup = (e)=>{
@@ -259,8 +335,12 @@
 			}
 			
 		}
+
+		registerEventHandler(evtname,fun) { 
+			this[`on${evtname}`](fun);
+		}
 		
-		registerHandeler(){
+		registerHandlers(){//system preset event
 			this.backgroundDoubleClickHandeler();
 			this.highLightHandler();
 			this.hoverHandler();
@@ -426,6 +506,7 @@
 		clickNodeHandler(){
 			let _this = this;
 			this.onClickNode((node, event) => {
+				if (!this.focusMode) return;
 				if (_this.keyListener.KeyX == true) { 
 					_this.dispatchKeyXPress(node, event);
 					return;
@@ -542,6 +623,39 @@
 			});
 		}
 
+		addNodeColorRule(fun) { 
+			this.nodeColorRule.push(fun);
+		}
+
+		addLinkColorRule(fun) { 
+			this.linkColorRule.push(fun);
+		}
+
+		executeNodeColorRules = (node) => { 
+			let finalColor = "gray";
+			let ruleColor = null;
+			let _this = this;
+			for (let r of _this.nodeColorRule) {
+				ruleColor = r(node);
+				if (!ruleColor || ruleColor != "default") {
+					finalColor = ruleColor;
+				 }
+			}
+			return finalColor;
+		}
+
+		executeLinkColorRules = (link) => { 
+			let finalColor = "gray";
+			let ruleColor = null;
+			let _this = this;
+			for (let r of _this.linkColorRule) {
+				finalColor = r(link);
+				if (!ruleColor || ruleColor != "default") {
+					finalColor = ruleColor;
+				}
+			}
+			return finalColor;
+		}
 		
 	
 		
