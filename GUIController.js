@@ -82,7 +82,8 @@
 		}
 		
 		
-		editNodePanel(settings){
+		editNodePanel(settings) {
+			let _this = this;
 			settings["apply"] = ()=>{
 				let labelsadd =  settings.labels["add"];
 				let propertiesadd =  settings.properties["add"];
@@ -121,11 +122,24 @@
 				$(".property-name:contains('name')").next("div").children().val("").focus();
 			}
 			$(".dg.main").on("keyup",(e)=>{console.log(e)});	
-
+			$(".property-name:contains('name')").next("div").children().focus();
+			$(".property-name:contains('name')").next("div").keydown(event => { 
+				if (event.keyCode === 13) {
+					// 这里是回车键被按下后要执行的操作
+					console.log('Enter key pressed');
+					let eventManager = window.GraphApp.eventManager;
+					let basic = window.GraphApp.basic;
+					eventManager.selectedNodes.clear();
+					eventManager.currentNode = basic.getLinkBySourceId(eventManager.currentNode.id);
+					window.GraphApp.Graph.nodeColor(window.GraphApp.Graph.nodeColor());
+					this.editLinkPanel(eventManager.currentNode);
+				  }
+			});
 			
 		}
 		
-		editLinkPanel(settings){
+		editLinkPanel(settings) {
+			let _this = this;
 			settings["apply"] = ()=>{
 				let propertiesadd =  settings.properties["add"];
 				let apply =  settings["apply"];
@@ -156,7 +170,23 @@
 			if($(".property-name:contains('name')").next("div").children().val()=="undefined"){
 				$(".property-name:contains('name')").next("div").children().val("").focus();
 			}
-			$(".dg.main").on("keyup",(e)=>{console.log(e)});
+			$(".dg.main").on("keyup", (e) => { console.log(e) });
+			$(".property-name:contains('name')").next("div").children().focus();
+			$(".property-name:contains('name')").next("div").keydown(event => { 
+				if (event.keyCode === 13) {
+					// 这里是回车键被按下后要执行的操作
+					console.log('Enter key pressed');
+					let eventManager = window.GraphApp.eventManager;
+					let basic = window.GraphApp.basic;
+					eventManager.selectedNodes.clear();
+					
+					eventManager.currentNode = basic.getNodeById(basic.getLinkById(eventManager.currentNode.id).target.id);
+					eventManager.selectedNodes.add(eventManager.currentNode);
+					
+					window.GraphApp.Graph.nodeColor(window.GraphApp.Graph.nodeColor());
+					_this.editNodePanel(eventManager.currentNode);
+				  }
+			});
 		}
 		
 		changeDatabasePanel(settings){

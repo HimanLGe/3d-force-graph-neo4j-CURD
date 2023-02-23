@@ -51,9 +51,11 @@
 		}
 		
 		async addRelationships(node1,relationships,node2){
-			await this.Connector.addRelationships(node1,relationships,node2).then((links)=>{
+			let ls = await this.Connector.addRelationships(node1,relationships,node2).then((links)=>{
 				this.graphManager.addLinks(links);
+				return links;
 			});
+			return ls;
 		}
 		
 		async setNode(node){

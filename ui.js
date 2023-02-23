@@ -4,6 +4,9 @@ function setUrl() {
     let url = document.getElementsByClassName("url")[0].value;
     let username = document.getElementsByClassName("username")[0].value;
     let pwd = document.getElementsByClassName("pwd")[0].value;
+    localStorage.dbpwd = pwd;
+    localStorage.dbname = username;
+    localStorage.dburl = url;
     window.neo4jConector.connect(url, username, pwd);
     document.getElementsByClassName("editDatabase")[0].style.display = "none";
     window.NWG.getAll();
@@ -32,6 +35,9 @@ function setDatabase() {
 
 function editUrl(){
     document.getElementsByClassName("editDatabase")[0].style.display = "block";
+    document.getElementsByClassName("pwd")[0].value = localStorage.dbpwd?localStorage.dbpwd:"";
+    document.getElementsByClassName("username")[0].value = localStorage.dbname?localStorage.dbname:"";
+    document.getElementsByClassName("url")[0].value = localStorage.dburl?localStorage.dburl:"";
 }
 
 function selectFile(){
@@ -100,4 +106,14 @@ function parsefile() {
     
 
     
+}
+
+function trackball(){
+    localStorage.controlType = "trackball";
+    location.reload();
+}
+
+function fly() {
+    localStorage.controlType = "fly";
+    location.reload();
 }

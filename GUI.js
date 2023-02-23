@@ -32,25 +32,29 @@
 					if(typeof(option[key])=='object'){
 						if(option[key].guioption){
 							let options = option[key].options;
-							settings["on"+key+"Change"] = ()=>{};
+							//settings["on"+key+"Change"] = ()=>{};
 							folder.add(option[key],"value",options);
-							controller.onChange((val)=>{
-							settings["on"+key+"Change"](val);
+							controller.onChange((val) => {
+							if (settings["on" + key + "Change"]) {
+								settings["on" + key + "Change"](val);
+							}
 							settings["apply"]();
 						});
 						}
 						else{
 							optionStack.push(option[key]);
 							let addedFolder = folder.addFolder(key);
-							if(key=="properties"||key=="labels") addedFolder.open();
+							if(key=="properties"||key=="labels"||key=="props") addedFolder.open();
 							folderStack.push(addedFolder);
 							this.folders.push(addedFolder);
 						}
 					}else{
-						settings["on"+key+"Change"] = ()=>{};
+						//settings["on"+key+"Change"] = ()=>{};
 						let controller = folder.add(option, key);
 						controller.onChange((val)=>{
-							settings["on"+key+"Change"](val);
+						if (settings["on" + key + "Change"]) {
+							settings["on" + key + "Change"](val);
+						}
 							settings["apply"]();//default upload to neo4j
 						});
 						this.controllers.push(controller);

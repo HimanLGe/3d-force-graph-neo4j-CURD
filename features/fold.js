@@ -57,8 +57,8 @@ export default class Fold{
                 }
         });
 
-        window.GraphApp.eventManager.addNodeColorRule(node => node.collapsed ? 'red' : 'default');
-        window.GraphApp.eventManager.addLinkColorRule(node => node.collapsed ? 'red' : 'default');
+        //window.GraphApp.eventManager.addNodeColorRule(node => node.collapsed ? 'red' : 'default');
+        //window.GraphApp.eventManager.addLinkColorRule(node => node.collapsed ? 'red' : 'default');
 
     }
 
@@ -89,7 +89,7 @@ export default class Fold{
                     for (let i = 0; i < node.childLinks.length; i++) {
                         let link = node.childLinks[i];
                         let targetNode = ((typeof link.target) === 'object') ? link.target : _this.nodesById[link.target];
-                        if (!targetNode.collapsed) {
+                        if (!_this.nodesById[targetNode.id].collapsed) {
                             link.collapsed = false;
                             visibleLinks.push(link);
                         } else if (_this.nodesById[link.target.id].childLinks.length > 0) {
@@ -158,7 +158,18 @@ export default class Fold{
         let gdata = this.Graph.graphData();
         this.nodesById[link.source.id].childLinks.forEach(l => {
             _this.nodesById[l.target.id].collapsed = false;
+            link.collapsed = false;
         });
+        this.Graph.graphData(this.getPrunedTree());
+    }
+
+    foldNode(id) { 
+        this.nodesById[id].collapsed = true;
+        this.Graph.graphData(this.getPrunedTree());
+    }
+
+    unfoldNode(id) {
+        this.nodesById[id].collapsed = false;
         this.Graph.graphData(this.getPrunedTree());
     }
 

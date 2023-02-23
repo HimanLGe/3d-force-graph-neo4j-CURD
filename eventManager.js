@@ -10,7 +10,7 @@
 			this.threeUtils = threeUtils;
 			this.THREE = THREE;
 			this.clickCount = 0;
-			this.currentNode = null;
+			this.currentNode = null;//also link click
 			this.selectedNodes = new Set();
 			this.selectedLinks = new Set();
 			//background click->true;interval times up -> false
@@ -108,7 +108,7 @@
 				this.hoverNode = null;
 				
 				this.Graph3d
-					.linkWidth(link => this.highlightLinks.has(link)||_this.selectedLinks.has(link) ? 4 : 1)
+					.linkWidth(link => this.highlightLinks.has(link)||_this.selectedLinks.has(link) ? 3 : 2)
 					.linkDirectionalParticles(link => this.highlightLinks.has(link)||_this.selectedLinks.has(link) ? 2 : 0)
 				.linkDirectionalParticleWidth(1);
 			
@@ -117,7 +117,8 @@
 				this.updateHighlight = function () {
 				  // trigger update of highlighted objects in scene
 				  this.Graph3d
-					.nodeColor(this.Graph3d.nodeColor())
+					  .nodeColor(this.Graph3d.nodeColor())
+					  .nodeRelSize(5)
 					.linkWidth(this.Graph3d.linkWidth())
 					.linkDirectionalParticles(this.Graph3d.linkDirectionalParticles());
 				}
@@ -261,6 +262,12 @@
 
 			this.addNodeColorRule(node =>
 				_this.selectedNodes.has(node) ? 'yellow' : 'default'
+			);
+
+			this.addLinkColorRule(link => {
+				if (!_this.currentNode) return 'default';
+				return _this.currentNode.id == link.id && _this.currentNode.source ? 'yellow' : 'default';
+			}
 			);
 			
 
@@ -466,38 +473,76 @@
 		
 		hoverHandler(){
 			let _this = this;
-			this.onHover(()=>{
-				_this.Graph3d.nodeThreeObject(node=>{
-					if(_this.highlightNodes.has(node)){
+			this.onHover(async (n)=>{
+				_this.Graph3d.nodeThreeObject(node => {
+					if (_this.highlightNodes.has(node)) {
 						
-						let sprite = new _this.THREE.SpriteText(node.properties.name?node.properties.name:node.id);
+						let sprite = new _this.THREE.SpriteText(node.properties.name ? node.properties.name : node.id);
 						sprite.material.depthWrite = false; // make sprite background transparent
 						sprite.color = node === _this.hoverNode ? 'orange' : 'green';
-						sprite.textHeight = 5;
+						sprite.textHeight = 10;
 						return sprite;
-					}else{
+					} else {
 						return false;
 					}
 				})
 				.linkThreeObject(link => {
-					if(_this.highlightLinks.has(link)||_this.selectedLinks.has(link)){
-				  // extend link with text sprite
-				  const sprite = new _this.THREE.SpriteText(`${link.properties.name}`);
-				  sprite.color = 'lightgrey';
-				  sprite.textHeight = 4;
-				  return sprite;
-					}else{
+					if (_this.highlightLinks.has(link) || _this.selectedLinks.has(link)) {
+						// extend link with text sprite
+						const sprite = new _this.THREE.SpriteText(`${link.properties.name}`);
+						sprite.color = 'lightgrey';
+						sprite.textHeight = 8;
+						return sprite;
+					} else {
 						return false;
 					}
 				})
 				.linkPositionUpdate((sprite, { start, end }) => {
-				  const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
-					[c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
-				  })));
+					const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+						[c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+					})));
 
-				  // Position sprite
-				  Object.assign(sprite.position, middlePos);
+					// Position sprite
+					Object.assign(sprite.position, middlePos);
 				});
+				_this.Graph3d.d3Force("link").distance(link => { 
+						return _this.highlightLinks.has(link) ? 80 : 50;
+				});
+				
+				let highLightLinksChanged = false;
+				if (!_this.preHighLightLinks ||  _this.preHighLightLinks.length != _this.highlightLinks.size) { highLightLinksChanged = true; }
+				else { 
+					_this.preHighLightLinks.forEach(p => { 
+						let hasSameLinkFlag = false;
+						_this.highlightLinks.forEach(l => { 
+							if (p == l) { 
+								hasSameLinkFlag = true;
+							}
+						});
+						if (!hasSameLinkFlag) highLightLinksChanged = true;
+					});
+				}
+				
+				if (highLightLinksChanged) {
+					if (n) {
+						n.fx = n.x;
+						n.fy = n.y;
+						n.fz = n.z;
+						setTimeout(() => {
+							n.fx = null;
+							n.fy = null;
+							n.fz = null;
+						},1000)
+					}
+					
+					_this.Graph3d.numDimensions(3);
+					_this.preHighLightLinks = [];
+					_this.highlightLinks.forEach((l) => { 
+						_this.preHighLightLinks.push(l);
+					});
+					
+				}
+				
 			});
 			
 			
@@ -511,6 +556,8 @@
 					_this.dispatchKeyXPress(node, event);
 					return;
 				}
+					_this.selectedNodes.clear();
+					if (!node.source) _this.selectedNodes.add(node);
 					_this.currentNode = node;
 				// Aim at node from outside it //
 				if(!node.source){//judge is node or link
@@ -563,9 +610,12 @@
 				});
 				
 				await this.NWG.addNodes([node]);
-				await this.NWG.addRelationships(node,{name:"rel",labels:["linkto"],properties:{name:"undefined"}},n2);
-				this.currentNode = node;
-				this.guiController.editLinkPanel(node);
+				let links = await this.NWG.addRelationships(n2, { name: "rel", labels: ["linkto"], properties: { name: "undefined" } }, node);
+				let link = _this.basic.getLinkById(links[0].id);
+				this.currentNode = link;
+				this.selectedNodes.clear();
+				this.selectedNodes.add(link);
+				this.guiController.editLinkPanel(link);
 			});
 		}
 
@@ -649,13 +699,18 @@
 			let ruleColor = null;
 			let _this = this;
 			for (let r of _this.linkColorRule) {
-				finalColor = r(link);
+				ruleColor = r(link);
 				if (!ruleColor || ruleColor != "default") {
 					finalColor = ruleColor;
 				}
 			}
 			return finalColor;
 		}
+
+		sleep(time) {
+			return new Promise(resolve =>
+				setTimeout(resolve,time)
+		) }
 		
 	
 		

@@ -128,6 +128,20 @@ class Basic{
 			return links[0];
 		}
 	}
+
+	getLinkBySourceId(id) { 
+		
+		let links = this.gdata.links.filter((o) => {
+			if (o.source.id == id) return true;
+
+		});
+		if (links.length == 0) {
+			return undefined;
+		}
+		else { 
+			return links[0];
+		}
+	}
 	
 	
 	//don't call this.graph.graphData for setting data directly , it cause bug! i promise!
