@@ -12,11 +12,12 @@ export default class PathSerializer {
                     _this.paths[n.id] += ` ${n.properties.name} `;
                     n.childLinks.forEach(l => { 
                         _this.paths[l.target.id] = _this.paths[l.source.id];
+                        _this.paths[l.target.id] += ` ${l.properties.name} `;
                     });
                     if(n.childLinks.length != 0) delete _this.paths[n.id];
                 } else { 
                     n.childLinks.forEach(l => { 
-                        _this.paths[l.target.id] = ` ${n.properties.name} `;
+                        _this.paths[l.target.id] = ` ${n.properties.name} ${l.properties.name} `;
                     });
                     
                 }
@@ -34,18 +35,21 @@ export default class PathSerializer {
         list.style.fontSize = '16px';
         list.style.lineHeight = '30px';
         list.style.textAlign = 'center';
-        list.style.top = '60%';
+        list.style.top = '54%';
         list.style.position = 'fixed';
         list.style.left = '50%';
+        list.style.maxHeight = '200px';
         list.style.transform = 'translate(-50%)';
         list.style.paddingLeft = '0';
         list.style.overflowX = 'hidden';
+        list.style.overflowY = 'scroll';
         list.style.display = "none";
         list.style.paddingRight = "20px";
 
         list.classList.add('list-box');
-
-        
+        const style = document.createElement("style");
+        style.innerHTML = ".list-box::-webkit-scrollbar { display: none; }";
+        document.head.appendChild(style);
 
         var parent = document.querySelector('body');
         parent.appendChild(list);
@@ -108,6 +112,7 @@ export default class PathSerializer {
             //key press event
             if (event.code == "KeyP") { 
                 _this.serializeMode = true;
+                window.GraphApp.guiController.autoFocusName = false;
             }
             
         });
@@ -122,6 +127,7 @@ export default class PathSerializer {
                 _this.paths = [];
                 _this.list.style.display = "block";
                 window.GraphApp.features.pulse.run();
+                window.GraphApp.guiController.autoFocusName = true;
             }
         });
 
@@ -180,10 +186,14 @@ export default class PathSerializer {
 
     clearList() { 
         let list = window.GraphApp.features.pathSerializer.list;
+        let dellist = [];
         list.childNodes.forEach((child) => {
             if (child.tagName === "LI") {
-                child.remove();
+                dellist.push(child);
             }
+        });
+        dellist.forEach(c => { 
+            c.remove();
         });
     }
 }

@@ -9,7 +9,7 @@ class Basic{
 	
 	initNode(){
 		let node = {
-			name:'',
+			
 			labels:[
 			//"label","label2"
 			],
@@ -35,8 +35,7 @@ class Basic{
 		let nodesAdded = [];
 		for(let i = 0 ; i < nodes.length;i++){
 			let node = nodes[i];
-			let name = node.name;
-			let id = node.id;
+			
 			nodesAdded.push(node);
 		}
 		let gdata = {
@@ -115,9 +114,37 @@ class Basic{
 		}
 	}
 
+	getNodeObjectById(id) { 
+		
+		let nodes = this.graph.graphData().nodes.filter((o) => {
+			if (o.id == id) return true;
+
+		});
+		if (nodes.length == 0) {
+			return undefined;
+		}
+		else { 
+			return nodes[0];
+		}
+	}
+
 	getLinkById(id) { 
 		
 		let links = this.gdata.links.filter((o) => {
+			if (o.id == id) return true;
+
+		});
+		if (links.length == 0) {
+			return undefined;
+		}
+		else { 
+			return links[0];
+		}
+	}
+
+	getLinkObjectById(id) { 
+		
+		let links = this.graph.graphData().links.filter((o) => {
 			if (o.id == id) return true;
 
 		});
@@ -147,7 +174,7 @@ class Basic{
 	//don't call this.graph.graphData for setting data directly , it cause bug! i promise!
 	updateGData(gdata){
 		this.gdata = gdata;
-		this.graph.linkCurvature('curvature').linkCurveRotation('rotation').graphData(this.gdata);
+		this.graph.graphData(this.gdata);
 	}
 	
 	curveDuplicateLinks(links){

@@ -9,7 +9,7 @@ export default class Filter {
         });
         document.addEventListener("keydown", function (event) {
             
-            if (event.code == "KeyF") window.GraphApp.eventManager.dispatchKeyFDown();
+            if (event.code == "KeyF"&&!window.GraphApp.gui.inputMode) window.GraphApp.eventManager.dispatchKeyFDown();
             
             
         });

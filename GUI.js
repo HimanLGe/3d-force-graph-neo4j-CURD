@@ -10,6 +10,16 @@
 			
 			this.controllers = [];
 			this.folders = [];
+			this.inputMode = false;//true while inputing
+			document.addEventListener("keydown", () => { 
+				let focusedElement = document.activeElement;
+				let ui = document.getElementsByClassName("dg main")[0];
+				if (ui.contains(focusedElement)) {
+					this.inputMode = true;
+				} else { 
+					this.inputMode = false;
+				}
+			});
 		}
 		
 		applySettings(settings){
@@ -28,7 +38,10 @@
 			while(option != undefined){
 				for(let i = 0 ; i < Object.keys(option).length;i++){
 					let key = Object.keys(option)[i];
-					if(key.includes("on")||key.includes("__")||key.includes("neighbors")||key.includes("source")||key.includes("target")) continue;
+					if (key.includes("on") || key.includes("__") || key.includes("neighbors") || key.includes("source") ||
+						key.includes("target") || key=="x" || key=="y" || key=="z" || key=="fx"
+						|| key == "fy" || key == "fz" || key.includes("x_") || key.includes("y_") || key.includes("z_")
+						|| key == "links" || key == "vx" || key == "vy" || key == "vz") continue;
 					if(typeof(option[key])=='object'){
 						if(option[key].guioption){
 							let options = option[key].options;
@@ -50,6 +63,7 @@
 						}
 					}else{
 						//settings["on"+key+"Change"] = ()=>{};
+						if (!option[key]) continue;
 						let controller = folder.add(option, key);
 						controller.onChange((val)=>{
 						if (settings["on" + key + "Change"]) {

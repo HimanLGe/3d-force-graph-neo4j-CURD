@@ -4,6 +4,7 @@
 			this.gui = GUI;
 			this.env = env;
 			this.neo4jWithGraph = neo4jWithGraph;
+			this.autoFocusName = true;
 			this.initCommandLine();
 		}
 		
@@ -113,26 +114,47 @@
 				};
 			settings.properties["add"] = ()=>{
 				var theResponse = window.prompt("prop name");
-				settings.properties[theResponse] = "";
+				settings.properties[theResponse] = "?";
 				settings = this.gui.applySettings(settings);
-				};
+			};
+			settings.onfixedChange = (e) => {
+				//console.log(e);
+				if (settings.properties.fixed == "true") {
+					settings.properties.fx = window.GraphApp.basic.getNodeObjectById(settings.id).x;
+					settings.properties.fy = window.GraphApp.basic.getNodeObjectById(settings.id).y;
+					settings.properties.fz = window.GraphApp.basic.getNodeObjectById(settings.id).z;
+					settings["apply"]();
+				} else { 
+					settings.properties.fx = null;
+					settings.properties.fy = null;
+					settings.properties.fz = null;
+					settings["apply"]();
+				}
+			};
 			settings = this.gui.applySettings(settings);
-			settings.onxChange = (e)=>{console.log(e);};
-			if($(".property-name:contains('name')").next("div").children().val()=="undefined"){
-				$(".property-name:contains('name')").next("div").children().val("").focus();
+			settings.onxChange = (e) => { console.log(e); };
+			if (this.autoFocusName) {
+				if ($(".property-name:contains('name')").next("div").children().val() == "undefined") {
+					$(".property-name:contains('name')").next("div").children().val("").focus();
+				} else {
+					$(".dg.main").on("keyup", (e) => { console.log(e) });
+					$(".property-name:contains('name')").next("div").children().focus();
+				}
 			}
-			$(".dg.main").on("keyup",(e)=>{console.log(e)});	
-			$(".property-name:contains('name')").next("div").children().focus();
 			$(".property-name:contains('name')").next("div").keydown(event => { 
 				if (event.keyCode === 13) {
 					// 这里是回车键被按下后要执行的操作
 					console.log('Enter key pressed');
 					let eventManager = window.GraphApp.eventManager;
 					let basic = window.GraphApp.basic;
-					eventManager.selectedNodes.clear();
-					eventManager.currentNode = basic.getLinkBySourceId(eventManager.currentNode.id);
-					window.GraphApp.Graph.nodeColor(window.GraphApp.Graph.nodeColor());
-					this.editLinkPanel(eventManager.currentNode);
+					let childLink = basic.getLinkBySourceId(eventManager.currentNode.id);
+					if (childLink) {
+						eventManager.selectedNodes.clear();
+						eventManager.currentNode = childLink;
+						
+						this.editLinkPanel(eventManager.currentNode);
+						window.GraphApp.Graph.nodeColor(window.GraphApp.Graph.nodeColor());
+					}
 				  }
 			});
 			
@@ -162,16 +184,20 @@
 			
 			settings.properties["add"] = ()=>{
 				var theResponse = window.prompt("prop name");
-				settings.properties[theResponse] = "";
+				settings.properties[theResponse] = "?";
 				settings = this.gui.applySettings(settings);
 				};
 			settings = this.gui.applySettings(settings);
 			settings.onxChange = (e)=>{console.log(e);};
-			if($(".property-name:contains('name')").next("div").children().val()=="undefined"){
-				$(".property-name:contains('name')").next("div").children().val("").focus();
+			
+			if (this.autoFocusName) {
+				if ($(".property-name:contains('name')").next("div").children().val() == "undefined") {
+					$(".property-name:contains('name')").next("div").children().val("").focus();
+				} else {
+					$(".dg.main").on("keyup", (e) => { console.log(e) });
+					$(".property-name:contains('name')").next("div").children().focus();
+				}
 			}
-			$(".dg.main").on("keyup", (e) => { console.log(e) });
-			$(".property-name:contains('name')").next("div").children().focus();
 			$(".property-name:contains('name')").next("div").keydown(event => { 
 				if (event.keyCode === 13) {
 					// 这里是回车键被按下后要执行的操作

@@ -11,6 +11,8 @@
 			this.THREE = THREE;
 			this.clickCount = 0;
 			this.currentNode = null;//also link click
+			this.historyClick = [];
+			this.arrowLeftCount = 0;
 			this.selectedNodes = new Set();
 			this.selectedLinks = new Set();
 			//background click->true;interval times up -> false
@@ -91,8 +93,8 @@
 				// cross-link node objects
 				let gData = this.Graph3d.graphData();
 				gData.links.forEach(link => {
-				  const a = gData.nodes.filter(node => {return node.id == link.source;})[0];
-				  const b = gData.nodes.filter(node => {return node.id == link.target;})[0];
+				  const a = gData.nodes.filter(node => {return node.id == link.source.id;})[0];
+				  const b = gData.nodes.filter(node => {return node.id == link.target.id;})[0];
 				  !a["neighbors"] && (a["neighbors"] = []);
 				  !b["neighbors"] && (b["neighbors"] = []);
 				  a.neighbors.push(b);
@@ -127,6 +129,7 @@
 			//key listener
 			let _this = this;
 			document.addEventListener("keydown", function (event) {
+
 				_this.keyListener[event.code] = true;
 				
 				//key press event
@@ -144,6 +147,28 @@
 					_this.Graph3d.controls().enabled = true;
 					_this.helper.disable();
 				}
+
+				if (event.code == "ArrowLeft") { 
+					if (_this.arrowLeftCount <= _this.historyClick.length) {
+						_this.arrowLeftCount += 1;
+						_this.currentNode = _this.historyClick[_this.historyClick.length - _this.arrowLeftCount];
+						_this.selectedNodes.clear();
+						_this.selectedNodes.add(_this.currentNode);
+						_this.guiController.editNodePanel(_this.currentNode);
+						_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());//refresh color
+					}
+				}
+
+				if (event.code == "ArrowRight") { 
+					if (_this.arrowLeftCount > 0) {
+						_this.arrowLeftCount -= 1;
+						_this.currentNode = _this.historyClick[_this.historyClick.length - _this.arrowLeftCount];
+						_this.selectedNodes.clear();
+						_this.selectedNodes.add(_this.currentNode);
+						_this.guiController.editNodePanel(_this.currentNode);
+						_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());//refresh color
+					}
+				}
 			});
 
 			//multiply select
@@ -152,6 +177,8 @@
 				if (!_this.keyListener.ControlLeft) return;//ctrl toggle multiply select
 
 				_this.selectedNodes.clear();
+				_this.highlightLinks.clear();
+				_this.selectedLinks.clear();
 				
 				for (const item of _this.selectionBox.collection) {
 					if (item.material.type == "MeshLambertMaterial") {
@@ -258,6 +285,7 @@
 				this.guiController.editNodePanel(node);
 				this.judgeAltKeyUpAndTwoNodesClicked(node, event);
 				this.dispatchClickNode(node, event);
+				this.fixNode(node,event);
 			});
 
 			this.addNodeColorRule(node =>
@@ -303,7 +331,7 @@
 			});
 			this.linkHoverdispatchSlot.push((link) => { 
 				this.dispatchHighLightLink(link);
-				this.dispatchHover();
+				this.dispatchHover(link);
 			});
 
 			//drag selected node together
@@ -335,8 +363,8 @@
 				console.log(e);
 				if(e.key =="Delete") this.dispatchDelKeyUp(this.currentNode,e);
 				
-				if(e.key =="Tab") {
-					
+				if(e.key =="Tab"&&!this.keyListener.AltLeft) {
+					e.preventDefault();
 					this.dispatchTabKeyUp(this.currentNode,e);
 					}
 			}
@@ -408,7 +436,7 @@
 			this.cube = new this.THREE.Mesh(geometry, material);//网格绘制
 			this.Graph3d.scene().add(this.cube);
 				//----------//
-			this.onBackgroundDoubleClick((e) => {
+			this.onBackgroundDoubleClick(async (e) => {
 				//judge alt clicked
 				if (e.altKey == true) {
 					this.dispatchAltKeyUpAndDoubleClicked(this.currentNode, e);
@@ -424,14 +452,25 @@
 					//cube.position = target;
 					console.log(target);
 					let node = this.basic.initNode();
-					node.name = "new"; //this will let 3dgraph make a tooltip text a
+					//node.name = "new"; //this will let 3dgraph make a tooltip text a
 					node.properties.name = "undefined";
 					['x', 'y', 'z'].forEach((axis) => {
 						node[axis] = target[axis];
 					});
-					let nodes = [];
-					this.NWG.addNodes([node]);
-					console.log(nodes);
+					
+					//update historyclick
+					while (this.arrowLeftCount > 0) {
+						this.historyClick.pop();
+						this.arrowLeftCount--;
+					}
+					
+
+					let nodeids = await this.NWG.addNodes([node]);
+					this.currentNode = window.GraphApp.basic.getNodeObjectById(nodeids[0]);
+					this.historyClick.push(this.currentNode);
+					this.selectedNodes.clear();
+					this.selectedNodes.add(this.currentNode);
+					this.guiController.editLinkPanel(this.currentNode);
 					//Do double click stuff
 				}
 			});
@@ -523,19 +562,21 @@
 					});
 				}
 				
+				//fix flash bug
 				if (highLightLinksChanged) {
-					if (n) {
+					if (n&&!(n.properties.fixed=="true")) {
 						n.fx = n.x;
 						n.fy = n.y;
 						n.fz = n.z;
 						setTimeout(() => {
-							n.fx = null;
-							n.fy = null;
-							n.fz = null;
+							delete n.fx;
+							delete n.fy;
+							delete n.fz;
+							
 						},1000)
 					}
 					
-					_this.Graph3d.numDimensions(3);
+					//_this.Graph3d.numDimensions(3);
 					_this.preHighLightLinks = [];
 					_this.highlightLinks.forEach((l) => { 
 						_this.preHighLightLinks.push(l);
@@ -551,33 +592,45 @@
 		clickNodeHandler(){
 			let _this = this;
 			this.onClickNode((node, event) => {
-				if (!this.focusMode) return;
+				
+				let preNode = {};
+				if (!_this.currentNode) { preNode = {x:1,y:1,z:1}; }
+				else if (!_this.currentNode.source) { preNode = _this.currentNode; }
+				else if(_this.currentNode.__lineObj) { preNode = _this.currentNode.__lineObj.position; }
 				if (_this.keyListener.KeyX == true) { 
 					_this.dispatchKeyXPress(node, event);
 					return;
 				}
+					_this.highlightLinks.clear();
+					_this.selectedLinks.clear();
 					_this.selectedNodes.clear();
 					if (!node.source) _this.selectedNodes.add(node);
+						//update historyclick
+						while (_this.arrowLeftCount > 0) {
+							_this.historyClick.pop();
+							_this.arrowLeftCount--;
+					}
 					_this.currentNode = node;
+					_this.historyClick.push(_this.currentNode);
+					
 				// Aim at node from outside it //
+				if (!_this.focusMode) return;
 				if(!node.source){//judge is node or link
 						if(!event.altKey){
-						let distance = 150;
-							let campos = _this.Graph3d.cameraPosition();
-							let distRatio = 0;
-							if (campos.x * node.x > 0 && campos.y * node.y > 0 && campos.z * node.z > 0) {
-								distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
-							}
-							else { 
-								distRatio = 1 - distance / Math.hypot(node.x, node.y, node.z);
-							}
 
-						let newPos = node.x || node.y || node.z
-						? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
-						: { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+						let campos = _this.Graph3d.cameraPosition();
 
+							
+
+						// parrallel
+						
+						let newx = campos.x+(node.x-preNode.x);
+						let newy = campos.y+(node.y-preNode.y);
+						let newz = campos.z+(node.z-preNode.z);
+						
+							
 						_this.Graph3d.cameraPosition(
-						newPos, // new position
+						{x:newx,y:newy,z:newz}, // new position
 						node, // lookAt ({ x, y, z })
 						800  // ms transition duration
 						);
@@ -603,7 +656,7 @@
 			this.onTabKeyUp(async (n2,event)=>{
 				let pos = {x:n2.x,y:n2.y,z:n2.z};	
 				let node = this.basic.initNode();
-				node.name = "new"; //this will let 3dgraph make a tooltip text a
+				//node.name = "new"; //this will let 3dgraph make a tooltip text a
 				node.properties.name = "undefined";
 				['x','y','z'].forEach((axis)=>{
 					node[axis] = pos[axis];
@@ -612,7 +665,14 @@
 				await this.NWG.addNodes([node]);
 				let links = await this.NWG.addRelationships(n2, { name: "rel", labels: ["linkto"], properties: { name: "undefined" } }, node);
 				let link = _this.basic.getLinkById(links[0].id);
+				//update historyclick
+				while (this.arrowLeftCount > 0) {
+					this.historyClick.pop();
+					this.arrowLeftCount--;
+				}
 				this.currentNode = link;
+				this.historyClick.push(this.currentNode);
+				
 				this.selectedNodes.clear();
 				this.selectedNodes.add(link);
 				this.guiController.editLinkPanel(link);
@@ -620,7 +680,7 @@
 		}
 
 		altKeyUpAndDoubleClickedHandler() { 
-			this.onAltKeyUpAndDoubleClicked((node, e) => { 
+			this.onAltKeyUpAndDoubleClicked(async (node, e) => { 
 				console.log(node);
 				console.log(e);
 				let pos = { x: e.clientX, y: e.clientY };
@@ -632,17 +692,32 @@
 				console.log(target);
 				let node2 = this.basic.initNode();
 				let rel = this.NWG.Connector.initRelationship();
-				node2.name = "new"; //this will let 3dgraph make a tooltip text a
+				//node2.name = "new"; //this will let 3dgraph make a tooltip text a
 				node2.properties.name = "undefined";
 				['x', 'y', 'z'].forEach((axis) => {
 					node2[axis] = target[axis];
 				});
-				this.NWG.concatNode(node.id,node2,rel);
+				let node2id = await this.NWG.concatNode(node.id, node2, rel);
+
+				//update historyclick
+				while (this.arrowLeftCount > 0) {
+					this.historyClick.pop();
+					this.arrowLeftCount--;
+				}
+				this.currentNode = window.GraphApp.basic.getLinkObjectById(node2id);
+				this.historyClick.push(this.currentNode);
+
+				
+				this.selectedNodes.clear();
+				this.selectedNodes.add(this.currentNode);
+				this.guiController.editLinkPanel(this.currentNode);
 			});
 		}
 
 		highLightPathHandler() { 
-			this.onKeyXPress(async (node,event) => { 
+			this.onKeyXPress(async (node, event) => { 
+				this.highlightLinks.clear();
+				this.selectedLinks.clear();
 					let r = await this.NWG.Connector.shortestPath2Node(this.currentNode.id,node.id);
 					let nodeids = r.nodeids;
 					let linkids = r.relids;
@@ -663,14 +738,64 @@
 				
 				
 			});
+			document.addEventListener("keydown", function (event) {
+				window.GraphApp.guiController.autoFocusName = false;
+				
+				//key press event
+				if (event.code == "KeyX") { 
+					
+					window.GraphApp.guiController.autoFocusName = false;
+				}
+				
+			});
+			document.addEventListener("keyup", function (event) {
+            
+				
+				//key press event
+				if (event.code == "KeyX") { 
+					
+					window.GraphApp.guiController.autoFocusName = true;
+				}
+				
+			});
 			
 		}
 
 		mouseDragHandler() { 
 			this.onMouseDrag(() => { 
-				//get nodes,links in select box
+				
 
 			});
+		}
+
+		fixNode(node, event) { 
+			// console.log(node);
+			// console.log(event);
+			if (this.keyListener.ShiftLeft && this.keyListener.KeyF) {
+				node.properties.fixed = "true";
+				node.properties.fx = window.GraphApp.basic.getNodeObjectById(node.id).x;
+				node.properties.fy = window.GraphApp.basic.getNodeObjectById(node.id).y;
+				node.properties.fz = window.GraphApp.basic.getNodeObjectById(node.id).z;
+				node.fx = window.GraphApp.basic.getNodeObjectById(node.id).x;
+				node.fy = window.GraphApp.basic.getNodeObjectById(node.id).y;
+				node.fz = window.GraphApp.basic.getNodeObjectById(node.id).z;
+				node.apply();
+			}
+		}
+
+		
+
+		saveNodePosition() { 
+
+			let nodes = [];
+			this.Graph3d.graphData().nodes.forEach(node => {
+				nodes.push({ id: node.id, x: node.x, y: node.y, z: node.z,fx:node.fx,fy:node.fy,fz:node.fz});
+				
+			});
+			let cypherString = "UNWIND $nodes AS node MATCH (n) WHERE id(n) = node.id SET n.x = node.x,n.y = node.y,n.z = node.z,n.fx = node.fx,n.fy=node.fy,n.fz=node.fz";
+			window.GraphApp.neo4jConnector.excuteCypher(cypherString, { nodes });
+
+			
 		}
 
 		addNodeColorRule(fun) { 

@@ -45,7 +45,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					let node = nodes[i];
 				
 					
-					cypherString += node.name;
+					cypherString += "node";
 					for(let j = 0 ; j < node.labels.length;j++){
 						let label = node.labels[j];
 						cypherString += ':';
@@ -62,7 +62,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					cypherString+='}';
 					
 					cypherString+=") return id(";
-					cypherString+=node.name;
+					cypherString+="node";
 					cypherString+=") as id";
 					await _this.initSession();
 					await _this.runCypherTask(cypherString)
@@ -82,19 +82,19 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
-				node.name?null:node.name="node";
+				
 				let cypherString = 'MATCH(';
 				
 					
-					cypherString += node.name;
+					cypherString += "node";
 					
 					cypherString+=") WHERE id("
-					cypherString+=node.name;
+					cypherString+="node";
 					cypherString+=")=";
 					cypherString+=node.id;
 					cypherString+=" SET  ";
 					Object.keys(node.properties).forEach((prop,idx)=>{
-						cypherString += node.name;
+						cypherString += "node";
 						cypherString += ".";
 						cypherString+=prop;
 						cypherString+='="';
@@ -106,7 +106,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					(Object.keys(node.properties).length!=0 && node.labels.length != 0)  ? cypherString+=',' : null
 					
 					for(let j = 0 ; j < node.labels.length;j++){
-						cypherString += node.name;
+						cypherString += "node";
 						let label = node.labels[j];
 						cypherString += ':';
 						cypherString+=label;
@@ -131,21 +131,21 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 			let _this = this;
 			(async function(resolve,reject){
 				let newLinkId = -1;
-				node.name?null:node.name="node";
+				
 				let cypherString = 'MATCH(n)-[';
 				
 					
-					cypherString += node.name;
+					cypherString += "node";
 					
 					cypherString+="]->(m) WHERE id("
-					cypherString+=node.name;
+					cypherString+="node";
 					cypherString+=")=";
 					cypherString+=node.id;
 					cypherString+=" CREATE (n)-[r2:"
 					cypherString+=node.type;
 					cypherString+="]->(m)";
 					cypherString+=" SET r2=";
-					cypherString+=node.name;
+					cypherString+="node";
 					
 					cypherString+=Object.keys(node.properties).length!=0?" ,":"";
 					Object.keys(node.properties).forEach((prop,idx)=>{
@@ -159,9 +159,9 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					});
 					
 					cypherString+=" WITH ";
-					cypherString+=node.name;
+					cypherString+="node";
 					cypherString+=" ,id(r2) as id DELETE ";
-					cypherString+=node.name;
+					cypherString+="node";
 					cypherString+=" return id ";
 					
 					
@@ -184,7 +184,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 				let cypherString = 'MATCH(';
 				nodes.forEach((node)=>{
 					
-					cypherString += node.name;
+					cypherString += "node";
 					node.labels.forEach((label)=>{
 						cypherString += ':';
 						cypherString+=label;
@@ -198,7 +198,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 					});
 					cypherString+='}';
 					cypherString+=") DETACH DELETE ";
-					cypherString += node.name;
+					cypherString += "node";
 					});
 					await _this.initSession();
 					await _this.runCypherTask(cypherString).then(()=>{
@@ -386,7 +386,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 
 	//TODO add Promise to adapt .then usage
 	//one instance run one cypher query at a time
-	runCypherTask(cypherString) { 
+	runCypherTask(cypherString,param=null) { 
 		return new Promise(async (resolve, reject) => {
 			let result = undefined;
 
@@ -399,7 +399,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 			let taskCypher = this.taskCypherList.pop();
 			this.runningFlag = true;
 			await this.initSession();
-			await this.session.run(taskCypher).then((res) => {
+			await this.session.run(taskCypher,param).then((res) => {
 				result = res.records;
 			});
 			await this.session.close();
@@ -408,10 +408,10 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		});
 	}
 
-	async excuteCypher(cypherString){
+	async excuteCypher(cypherString,param=null){
 		let result = null;
 		await this.initSession();
-		await this.runCypherTask(cypherString).then((res)=>{
+		await this.runCypherTask(cypherString,param).then((res)=>{
 						result = res;
 					});
 		await this.session.close();
@@ -420,7 +420,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	
 	initNode(){
 		let node = {
-			name:'',
+			
 			labels:[
 			//"label","label2"
 			],
@@ -433,9 +433,11 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	
 	initRelationship(){
 		let relationship = {
-			name:'',
+			
 			label:"linkto",
-			properties:{}
+			properties: {
+				name:"?"
+			}
 		};
 		
 		return relationship;

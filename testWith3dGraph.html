@@ -121,8 +121,8 @@
         <li class="drop-down">
           <a href="#">开始</a>
           <ul class="drop-down-content">
-            <li><a onclick="createDatabase()" href="#">新建</a></li>
-            <li><a onclick="switchDatabase()" href="#">打开</a></li>
+            <!-- <li><a onclick="createDatabase()" href="#">新建</a></li>
+            <li><a onclick="switchDatabase()" href="#">打开</a></li> -->
             <!-- <li><a href="#">保存</a></li> -->
             <!-- <li><a href="#">另存为</a></li> -->
             <li><a onclick="editUrl()" href="#">设置</a></li>
@@ -160,15 +160,19 @@
         </li>
       </ul>
     </div>
-    <div class="keymap">
+    <div class="keymap" style="display: none;">
       <p>multiply select : <a style="border: 1px solid;">Ctrl</a></p>
       <p>add Node : <a style="border: 1px solid;">Double Click</a></p>
-      <p>connect Node : <a style="border: 1px solid;">Alt +Double Click</a></p>
+      <p>connect Node : <a style="border: 1px solid;">Alt + Click 2 Node</a></p>
+      <p>concat Node : <a style="border: 1px solid;">Alt + Double Click</a></p>
       <p>attach node : <a style="border: 1px solid;">Tab</a></p>
       <p>del node : <a style="border: 1px solid;">Del</a></p>
       <p>filter node : <a style="border: 1px solid;">F</a></p>
       <p>shortest path : <a style="border: 1px solid;">X</a></p>
       <p>pathSerializer : <a style="border: 1px solid;">P</a></p>
+      <p>prev Node : <a style="border: 1px solid;">←</a></p>
+      <p>next Node : <a style="border: 1px solid;">→</a></p>
+      <p>fix Node : <a style="border: 1px solid;">Shift+F</a></p>
       <span class="keymapclose" style="background:rgba(255,255,255,0.3);position:fixed;color: red;right:0;top:0;" 
       onclick="document.getElementsByClassName('keymap')[0].style.display='none'">x</span>
     </div>
@@ -222,6 +226,9 @@
   <script type="module">
     import { SelectionBox } from './three-selectionbox.js';
     import { SelectionHelper } from './three-selectionhelper.js';
+
+    import { UnrealBloomPass } from '//unpkg.com/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
     window.GraphApp = {};//global variable
 
     
@@ -255,8 +262,16 @@
       //-------------------------//
 
       // reference others code //
+
+      //bloom effect
+      // const bloomPass = new UnrealBloomPass();
+      // bloomPass.strength = 3;
+      // bloomPass.radius = 1;
+      // bloomPass.threshold = 0.1;
+
       let Graph = ForceGraph3D({ controlType: localStorage.controlType })(document.getElementById("3d-graph"));
-      Graph.linkWidth(link => 2).nodeRelSize(5);
+      Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3);//.postProcessingComposer().addPass(bloomPass);
+      Graph.d3Force("link").distance(50);
       window.GraphApp.Graph = Graph;
       //-------------------------//
 
@@ -291,6 +306,7 @@
       let gui = new GUI(datgui);
       window.GraphApp.gui = gui;
       let guiController = new GUIController(gui, NWG, $, self);
+      window.GraphApp.guiController = guiController;
       //----------//
 
       // DO NOT BIND GRAPH EVENT THERE! BIND IN EVENTMANAGER!//
@@ -326,7 +342,8 @@
       "fold",
       "filter",
       "pulse",
-      "pathSerializer"
+      "pathSerializer",
+      "history"
     ]
     window.GraphApp.features = {};
     for(let p of featureList){
