@@ -313,13 +313,13 @@ class Neo4jConnector{
 			cypherString += "node1";
 			cypherString +=")-[";
 				cypherString += "rel";
-				if(relation.labels!=undefined){
-					relation.labels.forEach((label)=>{
+				if(relation.label!=undefined){
+					
 						
 						cypherString += ':';
-						cypherString+=label;
+						cypherString+=relation.label;
 						
-					});
+					
 				}
 				if(relation.properties!=undefined){
 					cypherString+='{';

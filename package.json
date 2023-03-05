@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@babel/parser": "^7.20.7",
+    "@babel/types": "^7.21.2",
     "babel-generator": "^6.26.1",
     "babel-traverse": "^6.26.0",
     "body-parser": "^1.20.1",

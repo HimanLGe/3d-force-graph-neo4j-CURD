@@ -10,7 +10,7 @@ var bodyParser = require('body-parser');
 
 
 var Neo4jConnector = require("./module/Neo4jConnector");
-var connector = Neo4jConnector("neo4j+s://9ab5a65f.databases.neo4j.io","neo4j","jx0AdI1o7vRn1x1T5o5eLJNtmB30rRjA5sZNk4IKI_Y");
+var connector = Neo4jConnector("neo4j://localhost:7687","neo4j","AGCF3xJumbfJD-b");
 var parser = require("./Parser/parser");
 //file explorer controller
 var controller = require('./file_explorer/node-explorer/controller');

@@ -270,7 +270,8 @@
       // bloomPass.threshold = 0.1;
 
       let Graph = ForceGraph3D({ controlType: localStorage.controlType })(document.getElementById("3d-graph"));
-      Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3);//.postProcessingComposer().addPass(bloomPass);
+      Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3).linkDirectionalArrowLength(1.5)
+      .linkDirectionalArrowRelPos(1);//.postProcessingComposer().addPass(bloomPass);
       Graph.d3Force("link").distance(50);
       window.GraphApp.Graph = Graph;
       //-------------------------//
