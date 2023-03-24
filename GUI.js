@@ -41,18 +41,31 @@
 					if (key.includes("on") || key.includes("__") || key.includes("neighbors") || key.includes("source") ||
 						key.includes("target") || key=="x" || key=="y" || key=="z" || key=="fx"
 						|| key == "fy" || key == "fz" || key.includes("x_") || key.includes("y_") || key.includes("z_")
-						|| key == "links" || key == "vx" || key == "vy" || key == "vz") continue;
+						|| key == "links" || key == "vx" || key == "vy" || key == "vz" || key == "index" || key == "elementId"
+						|| key == "startNodeElementId" || key == "endNodeElementId" || key == "identity" || key == "start" || key == "end") continue;
 					if(typeof(option[key])=='object'){
 						if(option[key].guioption){
 							let options = option[key].options;
 							//settings["on"+key+"Change"] = ()=>{};
-							folder.add(option[key],"value",options);
+							let controller = folder.add(option[key], option[key].guioption, options);
+							let opt = option;
 							controller.onChange((val) => {
-							if (settings["on" + key + "Change"]) {
-								settings["on" + key + "Change"](val);
+							if (settings["on" + opt[key].guioption + "Change"]) {
+								settings["on" + opt[key].guioption + "Change"](val);
 							}
 							settings["apply"]();
 						});
+						}
+						else if (option[key].colorKey) {
+							let controller = folder.addColor(option[key], option[key].colorKey);
+							this.controllers.push(controller);
+							let opt = option;
+							controller.onChange((val) => {
+								if (settings["on" + opt[key].colorKey + "Change"]) {
+									settings["on" + opt[key].colorKey + "Change"](val);
+								}
+								settings["apply"]();
+							});
 						}
 						else{
 							optionStack.push(option[key]);

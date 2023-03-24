@@ -16,6 +16,62 @@ export default class Pulse {
 
         this.activeNodes = new Set();
 
+        window.GraphApp.eventManager.addLinkThreeObjectRule(link => {
+            if (_this.pulseMode&&_this.nodesById[link.source.id].active) {
+                let pointA = new THREE.Vector3(link.source.x,link.source.y,link.source.z);
+					let pointB = new THREE.Vector3(link.target.x,link.target.y,link.target.z);
+					const axisVector = new THREE.Vector3().subVectors(pointB, pointA);
+					const axisLength = axisVector.length();
+					let cylinderLength = 0;
+					
+					//cylinder.lookAt(axisVector);
+
+					cylinderLength = axisLength; // 计算圆柱体的长度
+
+					
+
+					var cgeometry = new THREE.BoxGeometry(2, 2, 2);//创建一个立方体
+					var cmaterial = new THREE.MeshBasicMaterial({
+						color: "gray",
+						onBeforeCompile: shader => {
+							shader.uniforms.time = window.GraphApp.features.theme.globalUniforms.time;
+							shader.uniforms.bloom = window.GraphApp.features.theme.globalUniforms.bloom;
+							shader.uniforms.cylinderLength = cylinderLength;
+							shader.fragmentShader = `
+							  uniform float bloom;
+							  uniform float time;
+							  uniform float cylinderLength;
+							  ${shader.fragmentShader}
+							`.replace(
+							  `if ( mod( cylinderLength, totalSize ) > dashSize ) {
+								discard;
+							}`,
+							  ``
+							)
+							 .replace(
+							  `#include <premultiplied_alpha_fragment>`,
+							  `#include <premultiplied_alpha_fragment>
+								vec3 col = diffuse;
+								gl_FragColor.rgb = mix(col * 0.5, vec3(0), bloom);
+								
+								float sig = sin((cylinderLength * 2. + time * 20.) * 0.5) * 0.5 + 0.5;
+								sig = pow(sig, 16.);
+								gl_FragColor.rgb = mix(gl_FragColor.rgb, col * 0.75, sig);
+							  `
+							);
+							//console.log(shader.fragmentShader);
+						  }
+					});//填充的材质
+					var cube = new THREE.Mesh(cgeometry, cmaterial);//网格绘制
+					
+
+					return cube;
+            } else { 
+                return false;
+            }
+        }
+        );
+
         window.GraphApp.eventManager.addNodeColorRule(node => {
             if (_this.pulseMode) {
                 return _this.nodesById[node.id].active ? "blue" : "default"

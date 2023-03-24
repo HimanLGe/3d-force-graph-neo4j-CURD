@@ -26,9 +26,14 @@
 
 			this.nodeColorRule = [];
 			this.linkColorRule = [];
+
+			this.nodeThreeObjectRule = [];
+			this.linkThreeObjectRule = [];
 			
 			this.Graph3d.nodeColor(this.executeNodeColorRules);
 			this.Graph3d.linkColor(this.executeLinkColorRules);
+			this.Graph3d.nodeThreeObject(this.executeNodeThreeObjectRules);
+			this.Graph3d.linkThreeObject(this.executeLinkThreeObjectRules);
 			
 
 			//when graph event dispatched,run following Slot
@@ -80,8 +85,14 @@
 					this.events[eventName].todo.push(customFunc);
 				}
 			});
+
+			this.manageStyle();
+
 			//register event handler
 			this.registerHandlers();
+
+			
+			
 
 			
 			
@@ -114,7 +125,7 @@
 					.linkDirectionalParticles(link => this.highlightLinks.has(link)||_this.selectedLinks.has(link) ? 2 : 0)
 				.linkDirectionalParticleWidth(1);
 			
-			this.addNodeColorRule(node => this.highlightNodes.has(node) ? node === hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'default');
+			//this.addNodeColorRule(node => this.highlightNodes.has(node) ? node === this.hoverNode ? 'rgb(255,0,0,1)' : 'rgba(255,160,0,0.8)' : 'default');
 				
 				this.updateHighlight = function () {
 				  // trigger update of highlighted objects in scene
@@ -125,6 +136,8 @@
 					.linkDirectionalParticles(this.Graph3d.linkDirectionalParticles());
 				}
 			//-----------------//
+
+			
 
 			//key listener
 			let _this = this;
@@ -167,6 +180,7 @@
 						_this.selectedNodes.add(_this.currentNode);
 						_this.guiController.editNodePanel(_this.currentNode);
 						_this.Graph3d.nodeColor(_this.Graph3d.nodeColor());//refresh color
+						_this.focusNode(_this.currentNode);
 					}
 				}
 			});
@@ -368,6 +382,8 @@
 					this.dispatchTabKeyUp(this.currentNode,e);
 					}
 			}
+
+			
 			
 		}
 
@@ -512,31 +528,32 @@
 		
 		hoverHandler(){
 			let _this = this;
+			_this.addNodeThreeObjectRule(node => {
+				if (_this.highlightNodes.has(node)) {
+					
+					let sprite = new _this.THREE.SpriteText(node.properties.name ? node.properties.name : node.id);
+					sprite.material.depthWrite = false; // make sprite background transparent
+					sprite.color = node === _this.hoverNode ? 'orange' : 'green';
+					sprite.textHeight = 10;
+					return sprite;
+				} else {
+					return false;
+				}
+			});
+			_this.addLinkThreeObjectRule(link => {
+				if (_this.highlightLinks.has(link) || _this.selectedLinks.has(link)) {
+					//extend link with text sprite
+					const sprite = new _this.THREE.SpriteText(`${link.properties.name}`);
+					sprite.color = 'lightgrey';
+					sprite.textHeight = 8;
+					return sprite;
+
+				}
+			});
 			this.onHover(async (n)=>{
-				_this.Graph3d.nodeThreeObject(node => {
-					if (_this.highlightNodes.has(node)) {
-						
-						let sprite = new _this.THREE.SpriteText(node.properties.name ? node.properties.name : node.id);
-						sprite.material.depthWrite = false; // make sprite background transparent
-						sprite.color = node === _this.hoverNode ? 'orange' : 'green';
-						sprite.textHeight = 10;
-						return sprite;
-					} else {
-						return false;
-					}
-				})
-				.linkThreeObject(link => {
-					if (_this.highlightLinks.has(link) || _this.selectedLinks.has(link)) {
-						// extend link with text sprite
-						const sprite = new _this.THREE.SpriteText(`${link.properties.name}`);
-						sprite.color = 'lightgrey';
-						sprite.textHeight = 8;
-						return sprite;
-					} else {
-						return false;
-					}
-				})
-				.linkPositionUpdate((sprite, { start, end }) => {
+				_this.Graph3d.nodeThreeObject(this.executeNodeThreeObjectRules);
+				_this.Graph3d.linkThreeObject(this.executeLinkThreeObjectRules);
+				_this.Graph3d.linkPositionUpdate((sprite, { start, end }) => {
 					const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
 						[c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
 					})));
@@ -593,10 +610,10 @@
 			let _this = this;
 			this.onClickNode((node, event) => {
 				
-				let preNode = {};
-				if (!_this.currentNode) { preNode = {x:1,y:1,z:1}; }
-				else if (!_this.currentNode.source) { preNode = _this.currentNode; }
-				else if(_this.currentNode.__lineObj) { preNode = _this.currentNode.__lineObj.position; }
+				this.preNode = {};
+				if (!_this.currentNode) { this.preNode = {x:1,y:1,z:1}; }
+				else if (!_this.currentNode.source) { this.preNode = _this.currentNode; }
+				else if(_this.currentNode.__lineObj) { this.preNode = _this.currentNode.__lineObj.position; }
 				if (_this.keyListener.KeyX == true) { 
 					_this.dispatchKeyXPress(node, event);
 					return;
@@ -613,31 +630,36 @@
 					_this.currentNode = node;
 					_this.historyClick.push(_this.currentNode);
 					
-				// Aim at node from outside it //
-				if (!_this.focusMode) return;
-				if(!node.source){//judge is node or link
-						if(!event.altKey){
-
-						let campos = _this.Graph3d.cameraPosition();
-
-							
-
-						// parrallel
-						
-						let newx = campos.x+(node.x-preNode.x);
-						let newy = campos.y+(node.y-preNode.y);
-						let newz = campos.z+(node.z-preNode.z);
-						
-							
-						_this.Graph3d.cameraPosition(
-						{x:newx,y:newy,z:newz}, // new position
-						node, // lookAt ({ x, y, z })
-						800  // ms transition duration
-						);
-					}
-				}
-				//------------------------------//
+				_this.focusNode(node);
 			});
+		}
+
+		focusNode(node) { 
+			let _this = this;
+			// Aim at node from outside it //
+			if (!_this.focusMode) return;
+			if(!node.source){//judge is node or link
+					if(!_this.keyListener.AltLeft){
+
+					let campos = _this.Graph3d.cameraPosition();
+
+						
+
+					// parrallel
+					
+					let newx = campos.x+(node.x-this.preNode.x);
+					let newy = campos.y+(node.y-this.preNode.y);
+					let newz = campos.z+(node.z-this.preNode.z);
+					
+						
+					_this.Graph3d.cameraPosition(
+					{x:newx,y:newy,z:newz}, // new position
+					node, // lookAt ({ x, y, z })
+					800  // ms transition duration
+					);
+				}
+			}
+			//------------------------------//
 		}
 		
 		delKeyUpHandler(){
@@ -749,7 +771,7 @@
 				
 			});
 			document.addEventListener("keyup", function (event) {
-            
+				window.GraphApp.guiController.autoFocusName = true;
 				
 				//key press event
 				if (event.code == "KeyX") { 
@@ -806,6 +828,14 @@
 			this.linkColorRule.push(fun);
 		}
 
+		addNodeThreeObjectRule(fun) { 
+			this.nodeThreeObjectRule.push(fun);
+		}
+
+		addLinkThreeObjectRule(fun) { 
+			this.linkThreeObjectRule.push(fun);
+		}
+
 		executeNodeColorRules = (node) => { 
 			let finalColor = "gray";
 			let ruleColor = null;
@@ -832,10 +862,94 @@
 			return finalColor;
 		}
 
+		executeNodeThreeObjectRules = (node) => { 
+			let finalObject = false;
+			let ruleObject = null;
+			let _this = this;
+			for (let r of _this.nodeThreeObjectRule) {
+				ruleObject = r(node);
+				if(ruleObject) finalObject = ruleObject;
+			}
+			return finalObject;
+		}
+
+		executeLinkThreeObjectRules = (link) => { 
+			let finalObject = false;
+			let ruleObject = null;
+			let _this = this;
+			for (let r of _this.linkThreeObjectRule) {
+				ruleObject = r(link);
+				if(ruleObject) finalObject = ruleObject;
+			}
+			return finalObject;
+		}
+
 		sleep(time) {
 			return new Promise(resolve =>
 				setTimeout(resolve,time)
-		) }
+			)
+		}
+		
+		manageStyle() { 
+			// node style //
+			let _this = this;
+			this.addNodeThreeObjectRule(node => { 
+				if (!node || !node.properties.style) return false;
+				let nodecolor = node.properties.color ? node.properties.color : "gray";
+				nodecolor = _this.selectedNodes.has(node) ? 'yellow' : nodecolor;
+				if (node.properties.style == "Box") {
+					return new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				}
+				else if (node.properties.style == "Cone") { 
+					return new THREE.Mesh(new THREE.ConeGeometry(10, 10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				}
+				else if (node.properties.style == "Cylinder") { 
+					return new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				}
+				else if (node.properties.style == "Dodecahedron") {
+					return new THREE.Mesh(new THREE.DodecahedronGeometry(10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				 }
+				else if (node.properties.style == "Sphere") { 
+					return new THREE.Mesh(new THREE.SphereGeometry(10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				}
+				else if (node.properties.style == "Trous") { 
+					return new THREE.Mesh(new THREE.TorusGeometry(10, 10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				}
+				else if (node.properties.style == "TorusKnot") { 
+					return new THREE.Mesh(new THREE.TorusKnotGeometry(10, 10), new THREE.MeshLambertMaterial({
+						color: nodecolor,
+						transparent: true,
+						opacity: 0.75
+					}));
+				}
+				else return false;
+			});
+			//------------//
+		}
 		
 	
 		

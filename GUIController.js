@@ -90,14 +90,20 @@
 				let propertiesadd =  settings.properties["add"];
 				let apply =  settings["apply"];
 				let del =  settings["delete"];
+				let changeStyle =  settings.properties["changeStyle"];
+				let changeColor =  settings.properties["changeColor"];
 
 				delete settings.labels["add"];
 				delete settings.properties["add"];
 				delete settings["apply"];
 				delete settings["delete"];
+				delete settings["changeStyle"];
+				delete settings["changeColor"];
 				this.neo4jWithGraph.setNode(settings);
 				
 				settings.labels["add"] = labelsadd;
+				settings.labels["changeStyle"] = changeStyle;
+				settings.labels["changeColor"] = changeColor;
 				settings.properties["add"] = propertiesadd;
 				settings["apply"] = apply;
 				settings["delete"] = del;
@@ -111,12 +117,18 @@
 				var theResponse = window.prompt("label name");
 				settings.labels.push(theResponse);
 				settings = this.gui.applySettings(settings);
-				};
-			settings.properties["add"] = ()=>{
+			};
+			
+			settings.properties["changeStyle"] = { options: { Box: "Box", Cone: "Cone", Cylinder: "Cylinder", Dodecahedron: "Dodecahedron", Sphere: "Sphere", Trous: "Trous", TorusKnot: "TorusKnot" }, guioption: "changeStyle", changeStyle: "" };
+			
+			settings.properties["changeColor"] = { colorKey: "changeColor", changeColor: "#000000" };
+
+			settings.properties["add"] = () => {
 				var theResponse = window.prompt("prop name");
 				settings.properties[theResponse] = "?";
 				settings = this.gui.applySettings(settings);
 			};
+
 			settings.onfixedChange = (e) => {
 				//console.log(e);
 				if (settings.properties.fixed == "true") {
@@ -131,6 +143,16 @@
 					settings["apply"]();
 				}
 			};
+			settings.onchangeStyleChange = (val) => { 
+				settings.properties.style = val;
+				settings.apply();
+				window.GraphApp.Graph.nodeThreeObject(window.GraphApp.eventManager.executeNodeThreeObjectRules);
+			}
+			settings.onchangeColorChange = (val) => { 
+				settings.properties.color = val;
+				settings.apply();
+				window.GraphApp.Graph.nodeThreeObject(window.GraphApp.eventManager.executeNodeThreeObjectRules);
+			}
 			settings = this.gui.applySettings(settings);
 			settings.onxChange = (e) => { console.log(e); };
 			if (this.autoFocusName) {

@@ -110,7 +110,7 @@ export default class PathSerializer {
             window.GraphApp.Graph.controls().enabled = false;//disable orbit control
             window.GraphApp.eventManager.focusMode = false;//disable focus
             //key press event
-            if (event.code == "KeyP") { 
+            if (event.code == "KeyP"&&!window.GraphApp.gui.inputMode) { 
                 _this.serializeMode = true;
                 window.GraphApp.guiController.autoFocusName = false;
             }
@@ -121,7 +121,7 @@ export default class PathSerializer {
             window.GraphApp.Graph.controls().enabled = true;//disable orbit control
             window.GraphApp.eventManager.focusMode = true;//disable focus
             //key press event
-            if (event.code == "KeyP") { 
+            if (event.code == "KeyP"&&!window.GraphApp.gui.inputMode) { 
                 _this.serializeMode = false;
                 _this.clearList();
                 _this.paths = [];
@@ -182,6 +182,7 @@ export default class PathSerializer {
 
             list.appendChild(li);
         }
+        window.GraphApp.Graph.refresh();
     }
 
     clearList() { 

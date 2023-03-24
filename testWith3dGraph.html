@@ -112,6 +112,18 @@
       z-index: 9999;
     }
 
+    .plugins {
+      background-color: rgba(50, 50, 50, 0.5);
+      border-radius: 3px;
+      padding: 20px;
+      color: white;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-50%);
+      z-index: 9999;
+    }
+
     
     </style>
   </head>
@@ -153,9 +165,14 @@
         <li class="drop-down">
           <a href="#">Help</a>
           <ul class="drop-down-content">
-            <li><a onclick="document.getElementsByClassName('keymap')[0].style.display='block'" href="#">keymap</a></li>
-            
-            
+            <li><a onclick="document.getElementsByClassName('keymap')[0].style.display='block'" href="#">keymap</a></li> 
+          </ul>
+        </li>
+
+        <li class="drop-down">
+          <a href="#">Plugins</a>
+          <ul class="drop-down-content">
+            <li><a onclick="window.GraphApp.features.pluginsManager.openWindow()" href="#">plugins</a></li> 
           </ul>
         </li>
       </ul>
@@ -175,6 +192,20 @@
       <p>fix Node : <a style="border: 1px solid;">Shift+F</a></p>
       <span class="keymapclose" style="background:rgba(255,255,255,0.3);position:fixed;color: red;right:0;top:0;" 
       onclick="document.getElementsByClassName('keymap')[0].style.display='none'">x</span>
+    </div>
+
+    <div class="plugins" style="display: none;">
+      <span class="pluginsclose" style="background:rgba(255,255,255,0.3);position:fixed;color: red;right:0;top:0;" 
+      onclick="document.getElementsByClassName('plugins')[0].style.display='none'">x</span>
+      <input class="packagename">
+      <button onclick="window.GraphApp.features.pluginsManager.searchPlugins()">Search</button>
+      <button onclick="window.GraphApp.features.pluginsManager.getInstalled()">Installed</button>
+      <div class="pluginslist">
+        
+      </div>
+      <button onclick="window.GraphApp.features.pluginsManager.page--">上一页</button>
+      <button onclick="window.GraphApp.features.pluginsManager.page++">下一页</button>
+    </button>
     </div>
     <div id="3d-graph"></div>
 
@@ -273,6 +304,7 @@
       Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3).linkDirectionalArrowLength(1.5)
       .linkDirectionalArrowRelPos(1);//.postProcessingComposer().addPass(bloomPass);
       Graph.d3Force("link").distance(50);
+      Graph.backgroundColor("#000000");
       window.GraphApp.Graph = Graph;
       //-------------------------//
 
@@ -329,14 +361,7 @@
 
       
 
-    var pluginList = [];
-    window.GraphApp.plugins = {};
-    window.GraphApp.pluginList = pluginList;
-    for(let p of pluginList){
-      window.GraphApp.plugins[p] = await import(`./plugins/${p}.js`);
-      window.GraphApp.plugins[p] = window.GraphApp.plugins[p].default;
-      window.GraphApp.plugins[p] = new window.GraphApp.plugins[p]();
-    }
+    
 
 
     let featureList = [
@@ -344,7 +369,10 @@
       "filter",
       "pulse",
       "pathSerializer",
-      "history"
+      "history",
+      "theme",
+      "search",
+      "pluginsManager"
     ]
     window.GraphApp.features = {};
     for(let p of featureList){
@@ -352,6 +380,16 @@
       window.GraphApp.features[p] = window.GraphApp.features[p].default;
       window.GraphApp.features[p] = new window.GraphApp.features[p]();
     }
+
+    var pluginList = [];
+    window.GraphApp.plugins = {};
+    //window.GraphApp.pluginList = window.GraphApp.features.pluginsManager.listPlugins();
+    for(let p of pluginList){ 
+      window.GraphApp.plugins[p] = await import(`./plugins/node_modules/${p}/index.js`);
+      window.GraphApp.plugins[p] = window.GraphApp.plugins[p].default;
+      window.GraphApp.plugins[p] = new window.GraphApp.plugins[p]();
+    }
+
     // let Fold = await import("./features/fold.js");
     // Fold = Fold.default;
     // window.GraphApp.Fold = Fold;
