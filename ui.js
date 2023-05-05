@@ -22,15 +22,38 @@ function createDatabase() {
 
 function clearDatabase() {
     
-    window.neo4jConector.excuteCypher("match (n) detach delete (n)");
+    //window.neo4jConector.excuteCypher("match (n) detach delete (n)");
     window.NWG.getAll();
     
 }
 
 function setDatabase() {
-    window.neo4jConector.setDatabase(document.getElementById("listDatabase").value);
-    window.NWG.getAll();
-    document.getElementsByClassName("switchDatabase")[0].style.display = "none";
+    localStorage.dbname = document.getElementById("listDatabase").value;
+    window.ajax(
+        {
+            url:"http://localhost/setdatabase",
+            type:'post',
+            data:{
+                name:document.getElementById("listDatabase").value
+            },
+            dataType:'json',
+            timeout:10000,
+            contentType:"application/json",
+            success:function(data){
+                window.alert("success");
+                window.GraphApp.neo4jConnector.setDatabase(document.getElementById("listDatabase").value);
+                window.NWG.getAll();
+                document.getElementsByClassName("switchDatabase")[0].style.display = "none";
+            },
+            //异常处理
+            error:function(e){
+                console.log(e);
+            }
+        }
+    );
+
+    //window.neo4jConector.setDatabase(document.getElementById("listDatabase").value);
+    
 }
 
 function editUrl(){

@@ -11,7 +11,7 @@
 			await this.Connector.initSession();
 			let _this = this;
 			await this.Connector.session
-		  .run('match (n)-[rel]->(m) match (node) return (node),rel as link,id(n) as source,id(m) as target , id(rel) as linkid LIMIT $limit', {limit: neo4j.int(5000)})
+		  .run('match (n)-[rel]->(m) match (node) return (node),rel as link,id(n) as source,id(m) as target , id(rel) as linkid')
 		  .then(async function (result) {
 			let linkIdSet = new Set();
 			let nodeIdSet = new Set();

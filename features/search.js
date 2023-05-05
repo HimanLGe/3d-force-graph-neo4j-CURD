@@ -46,6 +46,7 @@ export default class search {
             settings["apply"] = () => { };
             window.GraphApp.gui.applySettings(settings);
             
+            
         });
 
         document.addEventListener("keydown", function (event) {

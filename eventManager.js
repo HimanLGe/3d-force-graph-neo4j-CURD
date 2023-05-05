@@ -161,7 +161,7 @@
 					_this.helper.disable();
 				}
 
-				if (event.code == "ArrowLeft") { 
+				if (event.code == "ArrowLeft" && !window.GraphApp.gui.inputMode) { 
 					if (_this.arrowLeftCount <= _this.historyClick.length) {
 						_this.arrowLeftCount += 1;
 						_this.currentNode = _this.historyClick[_this.historyClick.length - _this.arrowLeftCount];
@@ -172,7 +172,7 @@
 					}
 				}
 
-				if (event.code == "ArrowRight") { 
+				if (event.code == "ArrowRight" && !window.GraphApp.gui.inputMode) { 
 					if (_this.arrowLeftCount > 0) {
 						_this.arrowLeftCount -= 1;
 						_this.currentNode = _this.historyClick[_this.historyClick.length - _this.arrowLeftCount];
@@ -562,7 +562,17 @@
 					Object.assign(sprite.position, middlePos);
 				});
 				_this.Graph3d.d3Force("link").distance(link => { 
-						return _this.highlightLinks.has(link) ? 80 : 50;
+					
+					
+					if (_this.highlightLinks.has(link)&&n!=link) { 
+						_this.Graph3d.d3Force("charge").strength(node => { 
+							if (node.id == link.source.id || node.id == link.target.id) return 0;
+							else return -30;
+						})
+						return 80;
+					} else {
+						return 50;
+					}
 				});
 				
 				let highLightLinksChanged = false;
@@ -590,10 +600,10 @@
 							delete n.fy;
 							delete n.fz;
 							
-						},1000)
+						},5000)
 					}
 					
-					//_this.Graph3d.numDimensions(3);
+					if(!n.source) _this.Graph3d.numDimensions(3);
 					_this.preHighLightLinks = [];
 					_this.highlightLinks.forEach((l) => { 
 						_this.preHighLightLinks.push(l);
@@ -793,7 +803,7 @@
 		fixNode(node, event) { 
 			// console.log(node);
 			// console.log(event);
-			if (this.keyListener.ShiftLeft && this.keyListener.KeyF) {
+			if (this.keyListener.ShiftLeft && this.keyListener.KeyP) {
 				node.properties.fixed = "true";
 				node.properties.fx = window.GraphApp.basic.getNodeObjectById(node.id).x;
 				node.properties.fy = window.GraphApp.basic.getNodeObjectById(node.id).y;

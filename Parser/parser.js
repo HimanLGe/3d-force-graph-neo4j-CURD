@@ -114,12 +114,15 @@ async function parse(connector, fpath) {
     path.nodeid = nodeids[0];
   }
 
+  let importList = {} // 存储import的js的名字:解析树
 
   // 读取文件内容
   let fileContent = fs.readFileSync(fpath, 'utf-8');
 
   // 使用 Babel 解析文件内容并生成 AST
-  const ast = babel.parse(fileContent);
+  const ast = babel.parse(fileContent,{
+    sourceType: 'module',
+  });
 
   fileContent = fileContent.replaceAll("\n", " ").replaceAll("\t", "").replaceAll("\r"," ").replaceAll("\"","`");
 
@@ -130,6 +133,25 @@ async function parse(connector, fpath) {
   const traverse = require('babel-traverse').default;
   traverse(ast, {
   
+    ImportDeclaration(path) {
+      const sourcePath = path.node.source.value;
+      const importSpecifiers = path.node.specifiers.map(specifier => {
+        if (specifier.type === 'ImportDefaultSpecifier') {
+          return {
+            type: 'default',
+            name: specifier.local.name,
+          };
+        } else {
+          return {
+            type: 'named',
+            name: specifier.imported.name,
+            localName: specifier.local.name,
+          };
+        }
+      });
+      console.log(`Import from ${sourcePath}:`, importSpecifiers);
+    },
+
     FunctionDeclaration:  function (path) {
       let name = fileContent.substring(path.node.start, path.node.id.end+1);;
       addNodeWithName(path,name);
@@ -157,9 +179,7 @@ async function parse(connector, fpath) {
       
       
     },
-    ImportDeclaration: function (path) {
     
-    },
     ExportDefaultDeclaration: function (path) {
     
     },
@@ -395,6 +415,13 @@ function getParamsPath(path) {
   }
   return paths;
 }
+
+//判断是否调用自当前文件
+function isCallFromCurrentFile(path) { 
+  
+}
+
+//判断是否为import的别名
 
 function sleep(time) {
   return new Promise(resolve =>

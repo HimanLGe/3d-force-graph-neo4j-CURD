@@ -184,22 +184,25 @@
 		
 		editLinkPanel(settings) {
 			let _this = this;
-			settings["apply"] = ()=>{
-				let propertiesadd =  settings.properties["add"];
-				let apply =  settings["apply"];
-				let del =  settings["delete"];
-
-				delete settings.properties["add"];
-				delete settings["apply"];
-				delete settings["delete"];
-				this.neo4jWithGraph.setLink(settings);
+			settings["apply"] = () => {
 				
-				settings.properties["add"] = propertiesadd;
-				settings["apply"] = apply;
-				settings["delete"] = del;
-				console.log("apply");
+					let propertiesadd = settings.properties["add"];
+					let apply = settings["apply"];
+					let del = settings["delete"];
+
+					delete settings.properties["add"];
+					delete settings["apply"];
+					delete settings["delete"];
+					this.neo4jWithGraph.setLink(settings);
+				
+					settings.properties["add"] = propertiesadd;
+					settings["apply"] = apply;
+					settings["delete"] = del;
+					console.log("apply");
+				
 				};
-			settings["delete"] = ()=>{
+			settings["delete"] = () => {
+				
 				this.neo4jWithGraph.delLink(settings);
 				console.log("delete");
 				};

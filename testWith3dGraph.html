@@ -133,8 +133,8 @@
         <li class="drop-down">
           <a href="#">开始</a>
           <ul class="drop-down-content">
-            <!-- <li><a onclick="createDatabase()" href="#">新建</a></li>
-            <li><a onclick="switchDatabase()" href="#">打开</a></li> -->
+            <li><a onclick="createDatabase()" href="#">新建</a></li>
+            <li><a onclick="switchDatabase()" href="#">打开</a></li>
             <!-- <li><a href="#">保存</a></li> -->
             <!-- <li><a href="#">另存为</a></li> -->
             <li><a onclick="editUrl()" href="#">设置</a></li>
@@ -189,7 +189,8 @@
       <p>pathSerializer : <a style="border: 1px solid;">P</a></p>
       <p>prev Node : <a style="border: 1px solid;">←</a></p>
       <p>next Node : <a style="border: 1px solid;">→</a></p>
-      <p>fix Node : <a style="border: 1px solid;">Shift+F</a></p>
+      <p>fix Node : <a style="border: 1px solid;">Shift+P</a></p>
+      <p>search Node : <a style="border: 1px solid;">Shift+F</a></p>
       <span class="keymapclose" style="background:rgba(255,255,255,0.3);position:fixed;color: red;right:0;top:0;" 
       onclick="document.getElementsByClassName('keymap')[0].style.display='none'">x</span>
     </div>
@@ -275,7 +276,7 @@
       
       // initialize Neo4jConnector //
       let url = localStorage.dburl?localStorage.dburl:"neo4j://localhost:7687";
-      let name = localStorage.dbname?localStorage.name:"neo4j";
+      let name = localStorage.dbname?localStorage.dbname:"neo4j";
       let pwd = localStorage.dbpwd?localStorage.dbpwd:"AGCF3xJumbfJD-b";
       let a = new Connector(
         "neo4j://localhost:7687",
@@ -284,7 +285,7 @@
       );
       window.neo4jConector = a;
       window.GraphApp.neo4jConnector = a;
-      a.setDatabase("neo4j");
+      a.setDatabase(localStorage.dbname);
       await a.initSession();
       a.session.run("MATCH (n) return n").then((res) => {
         console.log(res);
@@ -304,6 +305,7 @@
       Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3).linkDirectionalArrowLength(1.5)
       .linkDirectionalArrowRelPos(1);//.postProcessingComposer().addPass(bloomPass);
       Graph.d3Force("link").distance(50);
+      setTimeout(()=>{Graph.d3Force("charge").distanceMax(200)},3000)
       Graph.backgroundColor("#000000");
       window.GraphApp.Graph = Graph;
       //-------------------------//

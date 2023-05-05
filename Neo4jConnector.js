@@ -244,20 +244,20 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
-				let cypherString = 'MATCH(';
+				let cypherString = 'MATCH ()-[r]->() ';
 				
 					
-					cypherString+=")-[n]-() ";
+					
 					cypherString+="WHERE id(";
-					cypherString += "n";
+					cypherString += "r";
 					cypherString += ")=";
 					cypherString += node.id;
 					
 					cypherString+=" DELETE ";
-					cypherString += "(n)";
+					cypherString += "r";
 					await _this.initSession();
-					await _this.runCypherTask(cypherString).then(()=>{
-						
+					await _this.runCypherTask(cypherString).then((res)=>{
+						console.log(res);
 					});
 				
 				await _this.session.close();

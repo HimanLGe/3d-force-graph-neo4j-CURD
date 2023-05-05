@@ -10,6 +10,7 @@ var util = require('util');
 var join = require('path').join;
 var bodyParser = require('body-parser');
 
+var neo4jProcess;
 
 var Neo4jConnector = require("./module/Neo4jConnector");
 var connector = Neo4jConnector("neo4j://localhost:7687","neo4j","AGCF3xJumbfJD-b");
@@ -19,6 +20,7 @@ var controller = require('./file_explorer/node-explorer/controller');
 var app = express();
 var dir = process.cwd();
 const KEYWORD = "";
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 app.use(express.static(dir));
 app.use(express.static(join(dir,"file_explorer/node-explorer")));
@@ -55,7 +57,73 @@ function getJsonFiles(jsonPath){
 	return jsonFiles;
 }
 
+async function startNeo4j(dbname) {
+  if (!neo4jProcess) {
+    let flag = false;
+    neo4jProcess = spawn('.\\neo4j-community-5.6.0\\bin\\neo4j.bat', ['console']);
+    // Attach to stdout stream
+    neo4jProcess.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+      if (data.includes("Started")) { 
+        flag = true;
+      }
+      
+    });
+
+    // Attach to stderr stream
+    neo4jProcess.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+      
+    });
+    while (!flag) { 
+      await wait(1000);
+    }
+    //console.log('Neo4j started');
+  } else {
+    console.log('Neo4j is already running');
+  }
+}
+
+async function switchDatabase(name) {
+  // Step 1: Stop Neo4j
+  stopNeo4j()
+  
+  await wait(5000)
+
+    // Step 2: Update configuration file
+    const configFile = '.\\neo4j-community-5.6.0\\conf\\neo4j.conf';
+    const dbmsActiveDatabase = `initial.dbms.default_database=${name}`;
+    exec(`(Get-Content ${configFile}) -replace '^#?(initial.dbms.default_database=).*','$1${name}' | Set-Content ${configFile}`, { shell: 'powershell' }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Config error: ${error}`);
+        return;
+      }
+      console.log(`Config output: ${stdout}`);
+
+      // Step 3: Start Neo4j
+      startNeo4j()
+    });
+  
+}
+
+function stopNeo4j() {
+  if (neo4jProcess) {
+    neo4jProcess.kill();
+    neo4jProcess = null;
+    console.log('Neo4j stopped');
+  } else {
+    console.log('Neo4j is not running');
+  }
+}
+
 var server = http.createServer(app).listen(80);
+
+app.post('/setdatabase', async function (req, res) {
+  let params = req.body;
+  let name = params.name;
+  await switchDatabase(name);
+  res.end(util.inspect(params));
+});
 
 app.get('/filelist', function(req, res) {
     let list = getJsonFiles("example");
@@ -159,9 +227,23 @@ app.get('/listPlugins', function (req, res) {
   res.json(array);
 });
 
+process.on('exit', () => {
+  console.log('Exiting...');
+
+  // 如果子进程还在运行，则杀死它
+  if (neo4jProcess && !neo4jProcess.killed) {
+    neo4jProcess.kill();
+    console.log('Child process killed');
+  }
+});
+
 
 console.log("监听80端口");
 
 const appurl = 'http://localhost/testWith3dGraph.html';
 
-spawn('cmd', ['/c', 'start', appurl], {stdio: 'ignore'});
+(async () => {
+  await startNeo4j();
+
+  spawn('cmd', ['/c', 'start', appurl], { stdio: 'ignore' });
+})();

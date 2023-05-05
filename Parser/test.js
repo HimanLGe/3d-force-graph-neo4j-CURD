@@ -1,4 +1,6 @@
-function f0(){
+import { a, b } from "b.js";
+
+function f0() {
     let a = 0;
     if(a==0){
       f1();

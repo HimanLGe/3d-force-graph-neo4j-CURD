@@ -82,7 +82,8 @@
 						if (settings["on" + key + "Change"]) {
 							settings["on" + key + "Change"](val);
 						}
-							settings["apply"]();//default upload to neo4j
+							if(key!="delete") settings["apply"]();
+							//settings["apply"]();//default upload to neo4j
 						});
 						this.controllers.push(controller);
 					}
