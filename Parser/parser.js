@@ -1,9 +1,10 @@
 const fs = require('fs');
 const babel = require('@babel/parser');
 const types = require('@babel/types');
+const _path = require('path');
 const { assertDeclareClass } = require('@babel/types');
 const generate = require('babel-generator').default;
-
+const traverse = require('babel-traverse').default;
 
 
 let nodesLinkParent = [];
@@ -14,6 +15,10 @@ let nodesLinkParams = [];
 let nodesLinkPrev = [];
 
 async function parse(connector, fpath) {
+
+  this.fpath = fpath;
+
+  this.importList = {}; // 存储import的js的名字:解析树
   
   function handelLinkList() { 
 
@@ -92,8 +97,8 @@ async function parse(connector, fpath) {
       });
     });
 
-    nodesLinkCalee.forEach(p => {
-      let callee = getCalleePath(p);
+    nodesLinkCalee.forEach(async p => {
+      let callee = await getCalleePath(p);
       
         if (callee.nodeid) {
           rel.properties.name = "call";
@@ -114,7 +119,7 @@ async function parse(connector, fpath) {
     path.nodeid = nodeids[0];
   }
 
-  let importList = {} // 存储import的js的名字:解析树
+  
 
   // 读取文件内容
   let fileContent = fs.readFileSync(fpath, 'utf-8');
@@ -127,11 +132,13 @@ async function parse(connector, fpath) {
   fileContent = fileContent.replaceAll("\n", " ").replaceAll("\t", "").replaceAll("\r"," ").replaceAll("\"","`");
 
   
+  
 
 
   // 遍历 AST
-  const traverse = require('babel-traverse').default;
-  traverse(ast, {
+  
+
+  await traverse(ast, {
   
     ImportDeclaration(path) {
       const sourcePath = path.node.source.value;
@@ -149,8 +156,23 @@ async function parse(connector, fpath) {
           };
         }
       });
-      console.log(`Import from ${sourcePath}:`, importSpecifiers);
-    },
+      console.log(`Import from ${_path.dirname(sourcePath)}:`, importSpecifiers);
+      importFilePath = _path.dirname(fpath) + "/" + sourcePath;
+      let importast = parse(connector, importFilePath);
+      this.importList[importFilePath] = importast;
+
+      let name = fileContent.substring(path.node.start, path.node.end + 1);;
+      addNodeWithName(path, name);
+      nodesLinkPrev.push(path);
+      if (isLastBlockStatement(path)) {
+        nodesLinkParent.push(path);
+      }
+    }
+  });
+
+  traverse(ast, {
+  
+    
 
     FunctionDeclaration:  function (path) {
       let name = fileContent.substring(path.node.start, path.node.id.end+1);;
@@ -285,7 +307,7 @@ async function parse(connector, fpath) {
   
   });
 
-  await sleep(2000);
+  await sleep(5000);
   handelLinkList();
 
   
@@ -296,6 +318,8 @@ async function parse(connector, fpath) {
   // 将 AST 重新生成为 JavaScript 代码
   const output = generate(ast);
   console.log(output.code);
+
+  return ast;
 
 }
 
@@ -333,13 +357,31 @@ function getLastStatementPath(p) {
   return lastStatementPath;
 }
 
+//判断是否调用自当前文件
+function isCallFromCurrentFile(path) { 
+  if (path.type != "ExpressionStatement") return true;
+  if (path.get('expression').type != "CallExpression") return true;
+
+  
+  let programPath = path;
+  while (programPath && !programPath.isProgram()) {
+    programPath = programPath.parentPath;
+  }
+
+  return programPath.scope.getBinding(path.get('expression').get("callee").node.name).path.type!="ImportSpecifier";
+}
+
 function getCallerPath(path) {
   let caller = null;
   let parentPath = null;
   if (path.isBlockStatement()) {
     parentPath = path.parentPath.parentPath;
   }
-  else { parentPath = path.parentPath; }
+  else {
+    
+      parentPath = path.parentPath;
+    
+  }
 
   // while (parentPath && !caller) {
   //   if (types.isCallExpression(parentPath.node)) {
@@ -355,8 +397,42 @@ function getCallerPath(path) {
   return parentPath;
 }
 
-function getCalleePath(path) {
-  return path.get("expression").get("callee").resolve();
+async function getCallerDeclarationPathFromImportedFile(path) { 
+  let programPath = path;
+  while (programPath && !programPath.isProgram()) {
+    programPath = programPath.parentPath;
+  }
+
+  let importFileName = programPath.scope.getBinding(path.get('expression').get("callee").node.name).path.parent.source.value;
+  importFilePath = _path.dirname(this.fpath) + "/" + _path.basename(importFileName);
+  //while (this.importList[importFilePath] instanceof Promise) await sleep(200);
+  let imf = await this.importList[importFilePath];
+  let respath = null;
+  await traverse(imf,{
+    FunctionDeclaration(funcPath) {
+      const callee = funcPath.node.callee;
+
+      // 提取函数的名称
+      let functionName = funcPath.node.id.name;
+      
+
+
+      if (path.node.expression.callee.name === functionName) {
+        respath =  funcPath;
+      } 
+    }
+  });
+  return respath;
+}
+
+async function getCalleePath(path) {
+  if (isCallFromCurrentFile(path)) {
+    return path.get("expression").get("callee").resolve();
+  }
+  else { 
+    return await getCallerDeclarationPathFromImportedFile(path);
+  }
+  
 }
 
 function getParamsPath(path) {
@@ -416,10 +492,7 @@ function getParamsPath(path) {
   return paths;
 }
 
-//判断是否调用自当前文件
-function isCallFromCurrentFile(path) { 
-  
-}
+
 
 //判断是否为import的别名
 

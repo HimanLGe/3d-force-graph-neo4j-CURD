@@ -1,4 +1,4 @@
-import { a, b } from "b.js";
+import { cc } from "test2.js";
 
 function f0() {
     let a = 0;
@@ -23,3 +23,4 @@ function f2(){
 }
 
 f2();
+cc();
