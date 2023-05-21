@@ -6,20 +6,13 @@
 
 ​	3d view of neo4j data,using based on 3d-force-graph & neo4j ,I want to build a Scalability system that is easy to extend any features,so it might be a little complicated
 
-## Usage
+## Usage(Windows)
 
-1. install node.js,double click open.bat to open local http server
+1. Download zip file in release,extract
 
-2. edit testWith3dGraph.html,modify your database like
+2. Install node-v18.15.0-x64.msi,then open install.bat,then open start.bat
 
-```html
-// initialize Neo4jConnector //
-a = new Connector("bolt://localhost:7687","neo4j","123456")
-a.setDatabase("neo4j")
-```
-
-3. visit localhost/testWith3dGraph.html on your browser
-4. Enjoy my friend~
+3. Enjoy my friend~
 
 ## File Description
 
