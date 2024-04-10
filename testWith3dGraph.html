@@ -330,8 +330,8 @@
       let Graph = ForceGraph3D({ controlType: localStorage.controlType })(document.getElementById("3d-graph"));
       Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3).linkDirectionalArrowLength(1.5)
       .linkDirectionalArrowRelPos(1);//.postProcessingComposer().addPass(bloomPass);
-      Graph.d3Force("link").distance(50);
-      setTimeout(()=>{Graph.d3Force("charge").distanceMax(200)},3000)
+      Graph.d3Force("link").distance(80);
+      //setTimeout(()=>{Graph.d3Force("charge").distanceMax(200)},3000)
       Graph.backgroundColor("#000000");
       window.GraphApp.Graph = Graph;
       //-------------------------//

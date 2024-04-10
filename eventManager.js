@@ -531,7 +531,7 @@
 			_this.addNodeThreeObjectRule(node => {
 				if (_this.highlightNodes.has(node)) {
 					
-					let sprite = new _this.THREE.SpriteText(node.properties.name ? node.properties.name : node.id);
+					let sprite = new _this.THREE.SpriteText(node.properties.name ? _this.strIntervalInsert(node.properties.name,11) : node.id);
 					sprite.material.depthWrite = false; // make sprite background transparent
 					sprite.color = node === _this.hoverNode ? 'orange' : 'green';
 					sprite.textHeight = 10;
@@ -543,7 +543,7 @@
 			_this.addLinkThreeObjectRule(link => {
 				if (_this.highlightLinks.has(link) || _this.selectedLinks.has(link)) {
 					//extend link with text sprite
-					const sprite = new _this.THREE.SpriteText(`${link.properties.name}`);
+					const sprite = new _this.THREE.SpriteText(`${_this.strIntervalInsert(link.properties.name,11)}`);
 					sprite.color = 'lightgrey';
 					sprite.textHeight = 8;
 					return sprite;
@@ -566,12 +566,12 @@
 					
 					if (_this.highlightLinks.has(link)&&n!=link) { 
 						_this.Graph3d.d3Force("charge").strength(node => { 
-							if (node.id == link.source.id || node.id == link.target.id) return 0;
-							else return -30;
+							if (node.id == link.source.id || node.id == link.target.id) return -30;
+							else return -1;
 						})
-						return 80;
+						return 160;
 					} else {
-						return 50;
+						return 100;
 					}
 				});
 				
@@ -960,9 +960,12 @@
 			});
 			//------------//
 		}
-		
-	
-		
+
+		strIntervalInsert(str, length) {
+			let reg = new RegExp(".{1," + length + "}", "g");
+			let ma = str.match(reg);
+			return ma.join("\n"); 
+		 }
 		
 		
 	}

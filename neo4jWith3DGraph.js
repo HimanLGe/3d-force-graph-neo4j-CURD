@@ -11,7 +11,11 @@
 			await this.Connector.initSession();
 			let _this = this;
 			await this.Connector.session
-		  .run('match (n)-[rel]->(m) match (node) return (node),rel as link,id(n) as source,id(m) as target , id(rel) as linkid')
+		  .run('MATCH (n)-[rel]->(m)\
+		  		MATCH (node)\
+		  		WHERE id(node) IN [id(n), id(m)]\
+		  		RETURN node, rel AS link, id(n) AS source, id(m) AS target, id(rel) AS linkid\
+		  ')
 		  .then(async function (result) {
 			let linkIdSet = new Set();
 			let nodeIdSet = new Set();

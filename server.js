@@ -4,7 +4,7 @@ var url = require("url"),
     path = require("path");
 var express = require('express');
 const axios = require('axios');
-const { exec,spawn } = require('child_process');
+const { exec,spawn,execSync } = require('child_process');
 var querystring = require('querystring');
 var util = require('util');
 var join = require('path').join;
@@ -58,30 +58,47 @@ function getJsonFiles(jsonPath){
 }
 
 async function startNeo4j(dbname) {
-  if (!neo4jProcess) {
-    let flag = false;
-    neo4jProcess = spawn('.\\neo4j-community-5.6.0\\bin\\neo4j.bat', ['console']);
-    // Attach to stdout stream
-    neo4jProcess.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-      if (data.includes("Started")) { 
-        flag = true;
-      }
+  // if (!neo4jProcess) {
+  //   let flag = false;
+  //   neo4jProcess = spawn('.\\neo4j-community-5.6.0\\bin\\neo4j.bat', ['console']);
+  //   // Attach to stdout stream
+  //   neo4jProcess.stdout.on('data', (data) => {
+  //     console.log(`stdout: ${data}`);
+  //     if (data.includes("Started")) { 
+  //       flag = true;
+  //     }
       
-    });
+  //   });
 
-    // Attach to stderr stream
-    neo4jProcess.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
+  //   // Attach to stderr stream
+  //   neo4jProcess.stderr.on('data', (data) => {
+  //     console.error(`stderr: ${data}`);
       
-    });
-    while (!flag) { 
-      await wait(1000);
+  //   });
+  //   while (!flag) { 
+  //     await wait(1000);
+  //   }
+  //   //console.log('Neo4j started');
+  // } else {
+  //   console.log('Neo4j is already running');
+  // }
+  exec('neo4j status', (e, stdout, stderr) => {
+    if (e) {
+      console.log("neo4j 未启动");
+      exec('neo4j start', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`执行命令时出错：${error}`);
+          return;
+        }
+  
+        console.log(`命令输出：${stdout}`);
+      });
     }
-    //console.log('Neo4j started');
-  } else {
-    console.log('Neo4j is already running');
-  }
+    else { 
+      console.log("neo4j 已启动");
+    }
+  });
+  
 }
 
 async function switchDatabase(name) {
@@ -106,13 +123,21 @@ async function switchDatabase(name) {
   
 }
 
-function stopNeo4j() {
-  if (neo4jProcess) {
-    neo4jProcess.kill();
-    neo4jProcess = null;
-    console.log('Neo4j stopped');
-  } else {
-    console.log('Neo4j is not running');
+async function stopNeo4j() {
+  // if (neo4jProcess) {
+  //   process.kill(neo4jProcess.pid,'SIGINT')
+  //   //neo4jProcess.kill();
+  //   neo4jProcess = null;
+  //   console.log('Neo4j stopped');
+  // } else {
+  //   console.log('Neo4j is not running');
+  // }
+  try {
+    const output = execSync('neo4j stop');
+    console.log(`命令输出：${output.toString()}`);
+  }
+  catch (error) { 
+    console.error(`执行命令时出错：${error}`);
   }
 }
 
@@ -227,7 +252,7 @@ app.get('/listPlugins', function (req, res) {
   res.json(array);
 });
 
-process.on('exit', () => {
+process.on('SIGINT', () => {
   console.log('Exiting...');
 
   // 如果子进程还在运行，则杀死它
@@ -235,6 +260,7 @@ process.on('exit', () => {
     neo4jProcess.kill();
     console.log('Child process killed');
   }
+  process.exit(0);
 });
 
 

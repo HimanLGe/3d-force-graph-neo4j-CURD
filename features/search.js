@@ -20,7 +20,7 @@ export default class search {
 
                 nodes.forEach((n) => { 
                     settings.Nodes
-                        [n.id]= () => { 
+                        [n.properties.name]= () => { 
                             window.GraphApp.eventManager.currentNode = n;
                             window.GraphApp.eventManager.selectedNodes.clear();
                             window.GraphApp.eventManager.selectedNodes.add(n);
@@ -32,7 +32,7 @@ export default class search {
 
                 links.forEach((l) => { 
                     settings.Links
-                        [l.id]= () => { 
+                        [l.properties.name]= () => { 
                             window.GraphApp.eventManager.currentNode = l;
                             window.GraphApp.eventManager.selectedNodes.clear();
                             window.GraphApp.eventManager.selectedNodes.add(l);
