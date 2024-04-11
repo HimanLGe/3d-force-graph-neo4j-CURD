@@ -256,6 +256,13 @@
 			}
 			$(".dg.main").on("keyup",(e)=>{console.log(e)});
 		}
+
+		homePanel(settings) {
+			settings["search"] = () => {
+				window.GraphApp.eventManager.dispatchSearch();
+			};
+			settings = this.gui.applySettings(settings);
+		}
 	}
 	
 	this.GUIController = GUIController;

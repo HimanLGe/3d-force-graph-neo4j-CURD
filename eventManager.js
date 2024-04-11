@@ -60,6 +60,7 @@
 				"ClickNode",
 				"DelKeyUp",
 				"TabKeyUp",
+				"KeyHUp",
 				"AltKeyUpAndDoubleClicked",
 				"KeyXPress",
 				"MouseDrag"
@@ -264,7 +265,7 @@
 			
 		}
 
-		registerEvent(evtname,customFunc) { 
+		registerEvent(evtname,customFunc) {
 			this.eventList.push(evtname);
 			let event = {
 				todo:[]//
@@ -380,6 +381,11 @@
 				if(e.key =="Tab"&&!this.keyListener.AltLeft) {
 					e.preventDefault();
 					this.dispatchTabKeyUp(this.currentNode,e);
+				}
+				
+				if(e.code =="KeyH") {
+					e.preventDefault();
+					this.dispatchKeyHUp(null,e);
 					}
 			}
 
@@ -401,6 +407,7 @@
 			this.altKeyUpAndDoubleClickedHandler();
 			this.highLightPathHandler();
 			this.mouseDragHandler();
+			this.KeyHUpHandler();
 		}
 		
 		judgeBackgroundDoubleClick(e){
@@ -797,6 +804,15 @@
 			this.onMouseDrag(() => { 
 				
 
+			});
+		}
+
+		KeyHUpHandler() {
+			this.onKeyHUp(() => {
+				console.log("keyH Up")
+				let settings = {}
+				settings["apply"] = () => { };
+				this.guiController.homePanel(settings);
 			});
 		}
 
