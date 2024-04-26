@@ -78,47 +78,49 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	}
 	
 	setNode(node){
-		if(node.labels.length==0&&Object.keys(node.properties).length==0) return;
+		if (node.labels.length == 0 && Object.keys(node.properties).length == 0) return;
+		let nodeId = node.id
+		let properties = node.properties
+		let labels = node.labels
 		return new Promise((resolve,reject)=>{
 			let _this = this;
 			(async function(resolve,reject){
 				
-				let cypherString = 'MATCH(';
-				
+				try {
+					// 构建Cypher查询字符串
+					let cypherString = `MATCH (node) WHERE id(node) = ${nodeId} SET `;
 					
-					cypherString += "node";
-					
-					cypherString+=") WHERE id("
-					cypherString+="node";
-					cypherString+=")=";
-					cypherString+=node.id;
-					cypherString+=" SET  ";
-					Object.keys(node.properties).forEach((prop,idx)=>{
-						cypherString += "node";
-						cypherString += ".";
-						cypherString+=prop;
-						cypherString+='="';
-						cypherString+=node.properties[prop];
-						cypherString+='"';
-						Object.keys(node.properties).length-1 == idx ? null:cypherString+=','
+					// 设置节点属性
+					Object.keys(properties).forEach((prop, idx) => {
+						cypherString += `node.${prop} = $${prop}`;
+						idx < Object.keys(properties).length - 1 ? cypherString += ', ' : null;
 					});
 					
-					(Object.keys(node.properties).length!=0 && node.labels.length != 0)  ? cypherString+=',' : null
-					
-					for(let j = 0 ; j < node.labels.length;j++){
-						cypherString += "node";
-						let label = node.labels[j];
-						cypherString += ':';
-						cypherString+=label;
-						node.labels.length-1 == j ? null:cypherString+=','
+					// 如果有属性，并且有标签，则添加逗号
+					if (Object.keys(properties).length !== 0 && labels.length !== 0) {
+						cypherString += ', ';
 					}
 					
-					await _this.initSession();
-					await _this.runCypherTask(cypherString).then(()=>{
-						
+					// 设置节点标签
+					labels.forEach((label, idx) => {
+						cypherString += `node:${label}`;
+						idx < labels.length - 1 ? cypherString += ', ' : null;
 					});
-				
-				await _this.session.close();
+					
+					// 初始化会话
+					await _this.initSession();
+					
+					// 将节点属性和标签合并为一个对象
+					const parameters = Object.assign({}, properties, labels);
+					
+					// 运行Cypher查询
+					await _this.runCypherTask(cypherString, parameters);
+				} catch (error) {
+					console.error('Error:', error);
+				} finally {
+					// 关闭会话
+					await _this.session.close();
+				}
 				resolve();
 			})(resolve,reject);
 		});
@@ -298,7 +300,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 			
 			cypherString += "node1";
 			cypherString +=")-[";
-				cypherString += relation.name;
+				cypherString += "r";
 				if(relation.labels!=undefined){
 					relation.labels.forEach((label)=>{
 						
@@ -328,14 +330,14 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		cypherString+=") as node1_id,";
 		
 		cypherString+="id(";
-		cypherString+=relation.name;
+		cypherString+="r";
 		cypherString+=") as id,";
 		
 		cypherString+="id(";
 		cypherString+="node2";
 		cypherString+=") as node2_id,";
 		
-		cypherString+=relation.name;
+		cypherString+="r";
 		cypherString+=" as link";
 		
 		
@@ -387,24 +389,43 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	//TODO add Promise to adapt .then usage
 	//one instance run one cypher query at a time
 	runCypherTask(cypherString,param=null) { 
+
+		const strParam = {};
+		for (const key in param) {
+		if (Object.hasOwnProperty.call(param, key)) {
+			strParam[key] = String(param[key]);
+			}
+		}
+
 		return new Promise(async (resolve, reject) => {
-			let result = undefined;
+			try {
+				let result = undefined;
 
 		
-			this.taskCypherList.push(cypherString);
-			while (this.taskCypherList[this.taskCypherList.length-1] != cypherString || this.runningFlag == true) {
-				await this.sleep(100);
+				this.taskCypherList.push(cypherString);
+				while (this.taskCypherList[this.taskCypherList.length - 1] != cypherString || this.runningFlag == true) {
+					await this.sleep(100);
 			
+				}
+				let taskCypher = this.taskCypherList.pop();
+				this.runningFlag = true;
+				await this.initSession();
+				// await this.session.run(taskCypher, param).then((res) => {
+				// 	result = res.records;
+				// });
+				
+				result = (await this.session.executeWrite(async tx => {
+					return await tx.run(taskCypher, strParam
+					)
+				})).records
+				
+				await this.session.close();
+				this.runningFlag = false;
+				resolve(result);
 			}
-			let taskCypher = this.taskCypherList.pop();
-			this.runningFlag = true;
-			await this.initSession();
-			await this.session.run(taskCypher,param).then((res) => {
-				result = res.records;
-			});
-			await this.session.close();
-			this.runningFlag = false;
-			resolve(result);
+			catch (error) {
+				console.error('Error:', error);
+			}
 		});
 	}
 
@@ -434,7 +455,7 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	initRelationship(){
 		let relationship = {
 			
-			label:"linkto",
+			labels:["linkto"],
 			properties: {
 				name:"?"
 			}
@@ -446,7 +467,79 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	sleep(time) {
 		return new Promise(resolve =>
 			setTimeout(resolve,time)
-		) }
+			)
+		}
+		
+		test() {
+			
+
+			(async () => {
+			
+			let driver, session
+			driver = this.driver
+			let employeeThreshold = 10
+
+			
+
+			session = driver.session({ database: this.database })
+			for(let i=0; i<100; i++) {
+				const name = `Neo-${i.toString()}`
+				const orgId = await session.executeWrite(async tx => {
+				let result, orgInfo
+
+				// Create new Person node with given name, if not already existing
+				await tx.run(`
+					MERGE (p:Person {name: $name})
+					RETURN p.name AS name
+					`, { name: name }
+				)
+
+				// Obtain most recent organization ID and number of people linked to it
+				result = await tx.run(`
+					MATCH (o:Organization)
+					RETURN o.id AS id, COUNT{(p:Person)-[r:WORKS_FOR]->(o)} AS employeesN
+					ORDER BY o.createdDate DESC
+					LIMIT 1
+				`)
+				if(result.records.length > 0) {
+					orgInfo = result.records[0]
+				}
+
+				if(orgInfo != undefined && orgInfo['employeesN'] == 0) {
+					throw new Error('Most recent organization is empty.')
+					// Transaction will roll back -> not even Person is created!
+				}
+
+				// If org does not have too many employees, add this Person to that
+				if(orgInfo != undefined && orgInfo['employeesN'] < employeeThreshold) {
+					result = await tx.run(`
+					MATCH (o:Organization {id: $orgId})
+					MATCH (p:Person {name: $name})
+					MERGE (p)-[r:WORKS_FOR]->(o)
+					RETURN $orgId AS id
+					`, { orgId: orgInfo['id'], name: name }
+					)
+
+				// Otherwise, create a new Organization and link Person to it
+				} else {
+					result = await tx.run(`
+					MATCH (p:Person {name: $name})
+					CREATE (o:Organization {id: randomuuid(), createdDate: datetime()})
+					MERGE (p)-[r:WORKS_FOR]->(o)
+					RETURN o.id AS id
+					`, { name: name }
+					)
+				}
+
+				// Return the Organization ID to which the new Person ends up in
+				return result.records[0].get('id')
+				})
+				console.log(`User ${name} added to organization ${orgId}`)
+			}
+			await session.close()
+			await driver.close()
+			})()
+		}
 	
 }
 

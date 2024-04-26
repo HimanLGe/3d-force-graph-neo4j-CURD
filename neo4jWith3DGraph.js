@@ -114,6 +114,33 @@
 			return new Promise(resolve =>
 				setTimeout(resolve,time)
 		) }
+
+		initNode(){
+			let node = {
+				
+				labels:[
+				//"label","label2"
+				],
+				properties: {
+					name:""
+				}
+				
+			};
+			
+			return node;
+		}
+
+		initRelationship(){
+			let relationship = {
+				
+				labels:["linkto"],
+				properties: {
+					name:"?"
+				}
+			};
+			
+			return relationship;
+		}
 	}
 	
 	this.neo4jWith3DGraph = neo4jWith3DGraph;

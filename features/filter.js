@@ -16,6 +16,7 @@ export default class Filter {
         window.GraphApp.eventManager.addNodeColorRule(node =>
             _this.hideNodes.has(node) ? 'rgba(100,100,100,0.3)' : 'default'
         );
+        this.registerHideNodesKey()
     }
 
     getLabelsAndProp() { 
@@ -134,5 +135,45 @@ export default class Filter {
         return this.Graph.graphData().links.find(l => { 
             return l.index == index;
         });
+    }
+
+    registerHideNodesKey() {
+        let _this = this;
+        window.GraphApp.eventManager.registerEvent("HideNode", (event) => {
+            console.log("hidenode");
+            if (event.shiftKey) {
+                // 隐藏除选中节点以外的所有节点
+                const selectedNodes = window.GraphApp.eventManager.selectedNodes;
+                
+    
+                // 将未选中的节点加入隐藏集合
+                _this.Graph.graphData().nodes.forEach(node => {
+                    if (!selectedNodes.has(node)) {
+                        if (_this.hideNodes.has(node)) {
+                            _this.hideNodes.delete(node);
+                        }
+                        else {
+                            _this.hideNodes.add(node);
+                        }
+                    }
+                });
+            } else {
+                // 隐藏选中的节点
+                window.GraphApp.eventManager.selectedNodes.forEach(node => {
+                    if (_this.hideNodes.has(node)) {
+                        _this.hideNodes.delete(node); // 如果节点已经隐藏，取消隐藏
+                    } else {
+                        _this.hideNodes.add(node); // 如果节点没有隐藏，隐藏它
+                    }
+                });
+            }
+            window.GraphApp.Graph.nodeColor(window.GraphApp.Graph.nodeColor());
+        })
+
+        document.addEventListener("keydown", function (event) { 
+            if (event.code == "KeyI") {
+                window.GraphApp.eventManager.dispatchHideNode(event);
+            }
+        })
     }
 }

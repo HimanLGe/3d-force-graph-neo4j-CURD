@@ -349,6 +349,7 @@
       // test neo4jWith3DGraph.js //
       let NWG = new neo4jWith3DGraph(basic, a);
       window.NWG = NWG;
+      window.GraphApp.NWG = NWG;
       await NWG.getAll();
       //node.name = "new2";
       //NWG.addNodes([node]);
@@ -409,7 +410,9 @@
       window.GraphApp.features[p] = new window.GraphApp.features[p]();
     }
 
-    var pluginList = [];
+    var pluginList = [
+      "gptAccess"
+    ];
     window.GraphApp.plugins = {};
     //window.GraphApp.pluginList = window.GraphApp.features.pluginsManager.listPlugins();
     for(let p of pluginList){ 
