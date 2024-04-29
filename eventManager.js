@@ -542,6 +542,8 @@
 					sprite.material.depthWrite = false; // make sprite background transparent
 					sprite.color = node === _this.hoverNode ? 'orange' : 'green';
 					sprite.textHeight = 10;
+
+					
 					return sprite;
 				} else {
 					return false;
@@ -648,6 +650,27 @@
 					_this.historyClick.push(_this.currentNode);
 					
 				_this.focusNode(node);
+			});
+
+			//点击节点启动编辑器
+			_this.addNodeThreeObjectRule(node => {
+				if (_this.currentNode == node) {
+					
+					const nodeEl = document.createElement('textarea');
+					nodeEl.innerText = node.properties.name;
+					nodeEl.style.width = "10%";
+					nodeEl.style.height = "10%";
+					nodeEl.className = 'node-label';
+					nodeEl.addEventListener("input", function() {
+						// 每次输入发生变化时更新输出
+						console.log(nodeEl.value)
+						_this.currentNode.properties.name = nodeEl.value
+						_this.currentNode.apply()
+					  });
+					return new window.CSS3DSprite(nodeEl);
+				} else {
+					return false;
+				}
 			});
 		}
 

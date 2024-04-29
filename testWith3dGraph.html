@@ -285,8 +285,10 @@
     import { SelectionHelper } from './three-selectionhelper.js';
 
     import { UnrealBloomPass } from '//unpkg.com/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+    import { CSS3DRenderer, CSS3DObject, CSS3DSprite } from 'three/addons/renderers/CSS3DRenderer.js';
     
-
+    window.CSS3DObject = CSS3DObject;
+    window.CSS3DSprite = CSS3DSprite;
     window.GraphApp = {};//global variable
 
     
@@ -327,7 +329,7 @@
       // bloomPass.radius = 1;
       // bloomPass.threshold = 0.1;
 
-      let Graph = ForceGraph3D({ controlType: localStorage.controlType })(document.getElementById("3d-graph"));
+      let Graph = ForceGraph3D({ controlType: localStorage.controlType,extraRenderers: [new CSS3DRenderer()] })(document.getElementById("3d-graph"));
       Graph.linkWidth(link => 2).nodeRelSize(5).d3VelocityDecay(0.3).linkDirectionalArrowLength(1.5)
       .linkDirectionalArrowRelPos(1);//.postProcessingComposer().addPass(bloomPass);
       Graph.d3Force("link").distance(80);
