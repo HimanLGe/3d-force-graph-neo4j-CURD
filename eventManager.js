@@ -538,7 +538,7 @@
 			_this.addNodeThreeObjectRule(node => {
 				if (_this.highlightNodes.has(node)) {
 					
-					let sprite = new _this.THREE.SpriteText(node.properties.name ? _this.strIntervalInsert(node.properties.name,11) : node.id);
+					let sprite = new _this.THREE.SpriteText(node.properties.name ? _this.strIntervalInsert(_this.truncateString(node.properties.name,50),11) : node.id);
 					sprite.material.depthWrite = false; // make sprite background transparent
 					sprite.color = node === _this.hoverNode ? 'orange' : 'green';
 					sprite.textHeight = 10;
@@ -656,10 +656,14 @@
 			_this.addNodeThreeObjectRule(node => {
 				if (_this.currentNode == node) {
 					
+
+					var divElement = document.createElement("div");
+    				divElement.classList.add("custom-div");
+
 					const nodeEl = document.createElement('textarea');
 					nodeEl.innerText = node.properties.name;
-					nodeEl.style.width = "10%";
-					nodeEl.style.height = "10%";
+					divElement.style.width = "10%";
+					divElement.style.height = "10%";
 					nodeEl.className = 'node-label';
 					nodeEl.addEventListener("input", function() {
 						// 每次输入发生变化时更新输出
@@ -667,7 +671,18 @@
 						_this.currentNode.properties.name = nodeEl.value
 						_this.currentNode.apply()
 					  });
-					return new window.CSS3DSprite(nodeEl);
+
+					var closeButton = document.createElement("button");
+					closeButton.textContent = "关闭";
+					closeButton.onclick = function() {
+						console.log("close")
+						_this.currentNode = null
+						_this.Graph3d.nodeThreeObject(_this.Graph3d.nodeThreeObject())//TODO 关闭按钮不能生效
+					};
+					divElement.appendChild(nodeEl);
+					divElement.appendChild(closeButton);
+
+					return new window.CSS3DSprite(divElement);
 				} else {
 					return false;
 				}
@@ -1005,6 +1020,15 @@
 			let ma = str.match(reg);
 			return ma.join("\n"); 
 		 }
+
+		// select part of string
+		truncateString(str, maxLength) {
+			if (str.length > maxLength) {
+				return str.substring(0, maxLength) + "...";
+			} else {
+				return str;
+			}
+		}
 		
 		
 	}
