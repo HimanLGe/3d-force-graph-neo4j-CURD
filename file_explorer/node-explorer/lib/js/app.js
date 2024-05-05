@@ -36,6 +36,7 @@ function ViewModel() {
   this.currentPath = ko.observable();
   this.filter = ko.observable('');
   this.files = ko.observableArray();
+  this.mode = 0;//0 tree,1 parser
 
   this.init = function() {
     this.getFiles('/files');
@@ -83,10 +84,19 @@ function ViewModel() {
       self.getFiles('/files?path=' + this.path);
       return false;
     }
-    $.post("/parsecode", { path: this.path }, (res) => { 
-      window.parent.alert("finish!");
-    },"json");
-    return true;
+    if (this.mode == 0) {
+      // $.post("/filetree", { path: this.path }, (res) => { 
+      //   window.parent.alert("finish!");
+      // },"json");
+      return true;
+     }
+    else {
+      $.post("/parsecode", { path: this.path }, (res) => { 
+        window.parent.alert("finish!");
+      },"json");
+      return true;
+    }
+    
   };
 
   function getIcon(ext) {
@@ -98,4 +108,13 @@ var vm = new ViewModel();
 vm.init();
 
 ko.applyBindings(vm);
+
+//url传入参数
+// 获取URL中的参数
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+const variableValue = urlParams.get('mode');
+
+// 在控制台输出参数值
+console.log(variableValue);
 

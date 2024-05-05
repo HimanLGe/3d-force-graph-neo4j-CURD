@@ -34,48 +34,51 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 	}
 	
 	//it return the ids of nodes as a array
-	addNodes(nodes){
-		
-		return new Promise((resolve,reject)=>{
-				let _this = this;
-				let nodeids = [];
-				(async function(resolve,reject){
-				for(let i = 0 ; i<nodes.length;i++){
-					let cypherString = 'CREATE(';
+	async addNodes(nodes) {
+		return new Promise(async (resolve, reject) => {
+			try {
+				let nodeIds = [];
+				for (let i = 0; i < nodes.length; i++) {
 					let node = nodes[i];
-				
+					let cypherString = 'CREATE (node';
 					
-					cypherString += "node";
-					for(let j = 0 ; j < node.labels.length;j++){
-						let label = node.labels[j];
-						cypherString += ':';
-						cypherString+=label;
+					// 添加节点标签
+					if (node.labels.length > 0) {
+						cypherString += `:${node.labels.join(':')}`;
 					}
-					cypherString+='{';
-					Object.keys(node.properties).forEach((prop,idx)=>{
-						cypherString+=prop;
-						cypherString+=':"';
-						cypherString+=node.properties[prop];
-						cypherString+='"';
-						Object.keys(node.properties).length-1 == idx ? null:cypherString+=','
-					});
-					cypherString+='}';
 					
-					cypherString+=") return id(";
-					cypherString+="node";
-					cypherString+=") as id";
-					await _this.initSession();
-					await _this.runCypherTask(cypherString)
-					.then((res)=>{
-						nodeids.push(res[0].get('id').toNumber());
+					cypherString += ' {';
+	
+					// 添加节点属性
+					Object.keys(node.properties).forEach((prop, idx) => {
+						cypherString += `${prop}: $${prop}`;
+						idx < Object.keys(node.properties).length - 1 ? cypherString += ', ' : null;
 					});
-
+	
+					cypherString += '}) RETURN id(node) AS id';
+					
+					// 初始化会话
+					await this.initSession();
+	
+					// 运行Cypher查询
+					const result = await this.runCypherTask(cypherString, node.properties);
+	
+					// 将节点ID添加到数组中
+					nodeIds.push(result[0].get('id').toNumber());
 				}
-			await _this.session.close();
-			resolve(nodeids);
-			})(resolve,reject);
+	
+				// 关闭会话
+				await this.session.close();
+	
+				// 解决Promise并返回节点ID数组
+				resolve(nodeIds);
+			} catch (error) {
+				// 捕获并拒绝任何错误
+				reject(error);
+			}
 		});
 	}
+	
 	
 	setNode(node){
 		if (node.labels.length == 0 && Object.keys(node.properties).length == 0) return;
@@ -126,57 +129,57 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 		});
 	}
 	
-	setLink(node){
-		
-		
-		return new Promise((resolve,reject)=>{
-			let _this = this;
-			(async function(resolve,reject){
+	async setLink(node) {
+		return new Promise(async (resolve, reject) => {
+			try {
 				let newLinkId = -1;
+				let setProperties = "";
+				let parameters = { relId: Number(node.id) };
+	
+				// Construct SET clause to set each property of the relationship
+				const propertiesKeys = Object.keys(node.properties);
+				for (let i = 0; i < propertiesKeys.length; i++) {
+					const key = propertiesKeys[i];
+					setProperties += `r2.${key} = $value${i}`;
+					parameters[`value${i}`] = node.properties[key];
+					if (i < propertiesKeys.length - 1) {
+						setProperties += ", ";
+					}
+				}
 				
-				let cypherString = 'MATCH(n)-[';
-				
-					
-					cypherString += "node";
-					
-					cypherString+="]->(m) WHERE id("
-					cypherString+="node";
-					cypherString+=")=";
-					cypherString+=node.id;
-					cypherString+=" CREATE (n)-[r2:"
-					cypherString+=node.type;
-					cypherString+="]->(m)";
-					cypherString+=" SET r2=";
-					cypherString+="node";
-					
-					cypherString+=Object.keys(node.properties).length!=0?" ,":"";
-					Object.keys(node.properties).forEach((prop,idx)=>{
-						cypherString += "r2";
-						cypherString += ".";
-						cypherString+=prop;
-						cypherString+='="';
-						cypherString+=node.properties[prop];
-						cypherString+='"';
-						Object.keys(node.properties).length-1 == idx ? null:cypherString+=','
-					});
-					
-					cypherString+=" WITH ";
-					cypherString+="node";
-					cypherString+=" ,id(r2) as id DELETE ";
-					cypherString+="node";
-					cypherString+=" return id ";
-					
-					
-					await _this.initSession();
-					await _this.runCypherTask(cypherString).then((res)=>{
-						newLinkId = res[0].get("id").toNumber();
-					});
-				
-				await _this.session.close();
+				// Construct Cypher query string with SET clause
+				let cypherString = `
+					MATCH (n)-[rel]->(m) 
+					WHERE id(rel) = $relId
+					CREATE (n)-[r2:linkto]->(m)
+					SET ${setProperties}
+					WITH rel, id(r2) AS id
+					DELETE rel
+					RETURN id
+				`;
+	
+				// Initialize session
+				await this.initSession();
+	
+				// Run Cypher query
+				const result = await this.runCypherTask(cypherString, parameters);
+	
+				// Get the new link's ID
+				newLinkId = result[0].get("id").toNumber();
+	
+				// Close session
+				await this.session.close();
+	
+				// Resolve the promise and return the new link's ID
 				resolve(newLinkId);
-			})(resolve,reject);
+			} catch (error) {
+				// Catch and reject any errors
+				reject(error);
+			}
 		});
 	}
+	
+	
 	
 	delNodes(nodes){
 		
@@ -392,8 +395,10 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 
 		const strParam = {};
 		for (const key in param) {
-		if (Object.hasOwnProperty.call(param, key)) {
-			strParam[key] = String(param[key]);
+			if (Object.hasOwnProperty.call(param, key)) {
+				if (!(typeof param[key] == "string" || typeof param[key] == "number")) strParam[key] = String(param[key]);
+				else strParam[key] = param[key];
+			
 			}
 		}
 
@@ -414,9 +419,11 @@ document.write('<script src="https://unpkg.com/neo4j-driver@5.1.0/lib/browser/ne
 				// 	result = res.records;
 				// });
 				
-				result = (await this.session.executeWrite(async tx => {
-					return await tx.run(taskCypher, strParam
+				result = (await this.session.writeTransaction(async tx => {
+					var res =  await tx.run(taskCypher, strParam
+						
 					)
+					return res
 				})).records
 				
 				await this.session.close();

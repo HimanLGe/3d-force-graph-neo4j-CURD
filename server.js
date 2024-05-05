@@ -13,7 +13,11 @@ var bodyParser = require('body-parser');
 var neo4jProcess;
 
 var Neo4jConnector = require("./module/Neo4jConnector");
-var connector = Neo4jConnector("neo4j://localhost:7687","neo4j","AGCF3xJumbfJD-b");
+var connector = Neo4jConnector("neo4j://localhost:7687", "neo4j", "AGCF3xJumbfJD-b");
+
+var FileTreeBuilder = require("./module/FileTreeBuilder");
+var fileTreeBuilder = new FileTreeBuilder(connector);
+
 var parser = require("./Parser/parser");
 //file explorer controller
 var controller = require('./file_explorer/node-explorer/controller');
@@ -161,14 +165,23 @@ app.post('/parsecode', async function (req, res) {
     await parser.parse(connector, path);
     res.end(util.inspect(params));
 });
+
+app.post('/filetree', async function (req, res) {
+  let params = req.body;
+  let path = params.path;
+  await fileTreeBuilder.createFileTreeNodes(path,["node_modules"]);
+  res.end(util.inspect(params));
+});
   
 //file explorer handler
 app.get('/files', function(req, res) {
     controller.getFiles(req, res, dir);
   });
   
-app.get('/explorer', function(req, res) {
-res.redirect('file_explorer/node-explorer/lib/index.html');
+app.get('/explorer', function (req, res) {
+  const mode = req.query.mode || '0';//0 fileTree,1 parser
+  const url = `file_explorer/node-explorer/lib/index.html?mode=${mode}`;
+  res.redirect(url);
 });
 
 app.post('/search', async function (req, res) { 

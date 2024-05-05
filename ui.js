@@ -63,8 +63,38 @@ function editUrl(){
     document.getElementsByClassName("url")[0].value = localStorage.dburl?localStorage.dburl:"";
 }
 
-function selectFile(){
+function selectFile() {
+    document.getElementsByClassName("fileManager")[0].querySelector("iframe").src = "explorer?mode=1";
     document.getElementsByClassName("fileManager")[0].style.display = "block";
+}
+
+function folderTree() {
+    document.getElementsByClassName("fileManager")[0].querySelector("iframe").src = "explorer?mode=0";
+    document.getElementsByClassName("fileManager")[0].style.display = "block";
+}
+
+function fileManagerConfirm() {
+    const fp = document.getElementsByClassName("fileManager")[0].querySelector("iframe").contentWindow.vm.currentPath();
+    console.log(fp)
+    window.ajax(
+        {
+            url:"http://localhost/filetree",
+            type:'post',
+            data:{
+                path:fp
+            },
+            dataType:'json',
+            timeout:10000,
+            contentType:"application/json",
+            success:function(data){
+                window.alert("success");
+            },
+            //异常处理
+            error:function(e){
+                console.log(e);
+            }
+        }
+    );
 }
 
 async function switchDatabase(){

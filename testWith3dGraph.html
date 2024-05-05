@@ -157,6 +157,7 @@
           <a href="#">程序</a>
           <ul class="drop-down-content">
             <li><a onclick="selectFile()" href="#">打开</a></li>
+            <li><a onclick="folderTree()" href="#">解析文件树</a></li>
             
           </ul>
         </li>
@@ -249,7 +250,8 @@
 	</dialog>
 
   <dialog class="fileManager"> 
-		<iframe src="explorer"></iframe>
+		<iframe src="explorer?mode=0"></iframe>
+    <button onclick="fileManagerConfirm()" type="button">确定</button>
     <button onclick="document.getElementsByClassName('fileManager')[0].style.display = 'none'" type="button">关闭</button>
 	</dialog>
 
