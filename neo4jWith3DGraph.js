@@ -4,8 +4,13 @@
 		constructor(graphManager,neo4jConnector){
 			this.graphManager = graphManager;
 			this.Connector = neo4jConnector;
+			this.linkChangeSlot = [];//dispathed when links add of set
+			this.nodeChangeSlot = [];//dispathed when nodes add of set
 		}
 		
+		onNodeChange(slot){this.nodeChangeSlot.push(slot);}
+		onLinkChange(slot){this.linkChangeSlot.push(slot);}
+
 		async getAll(){
 			const start = new Date();
 			await this.Connector.initSession();
@@ -69,6 +74,9 @@
 					return node;
 				});
 				this.graphManager.addNodes(nodes);
+				this.nodes.forEach(node=>{
+					this.nodeChangeSlot.forEach(slot => {slot(node)});
+				})
 				
 			});
 			return nodeids;
@@ -78,6 +86,9 @@
 		async addRelationships(node1,relationships,node2){
 			let ls = await this.Connector.addRelationships(node1,relationships,node2).then((links)=>{
 				this.graphManager.addLinks(links);
+				this.links.forEach(link=>{
+					this.linkChangeSlot.forEach(slot => {slot(link)});
+				})
 				return links;
 			});
 			return ls;
@@ -85,10 +96,12 @@
 		
 		async setNode(node){
 			await this.Connector.setNode(node);
+			this.nodeChangeSlot.forEach(slot => {slot(node)});
 		}
 		
 		async setLink(link){
 			let id = await this.Connector.setLink(link);
+			this.linkChangeSlot.forEach(slot => {slot(link)});
 			link.id = id;
 		}
 		
