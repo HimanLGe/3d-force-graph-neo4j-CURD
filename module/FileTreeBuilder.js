@@ -41,16 +41,21 @@ class FileTreeBuilder {
                 }
             } else {
                 // 如果是文件，读取内容并创建节点
-                const fileContent = fs.readFileSync(filePath, 'utf-8');
-                const fileNode = this.neo4jConnector.initNode();
-                fileNode.properties.name = fileContent;
-                fileNode.id = (await this.neo4jConnector.addNodes([fileNode]))[0];
+                const codeFileExtensions = ['.c', '.h', '.js', '.py'];
+                const fileExtension = file.split('.').pop();
+                if(codeFileExtensions.includes('.' + fileExtension)){
 
-                // 创建根文件夹到文件的关系
-                const relationship = this.neo4jConnector.initRelationship();
-                relationship.properties.name = file;
-                relationship.labels = ["文件"];
-                relationship.id = (await this.neo4jConnector.addRelationships(rootNode.id, relationship, fileNode.id))[0];
+                    const fileContent = fs.readFileSync(filePath, 'utf-8');
+                    const fileNode = this.neo4jConnector.initNode();
+                    fileNode.properties.name = fileContent;
+                    fileNode.id = (await this.neo4jConnector.addNodes([fileNode]))[0];
+
+                    // 创建根文件夹到文件的关系
+                    const relationship = this.neo4jConnector.initRelationship();
+                    relationship.properties.name = file;
+                    relationship.labels = ["文件"];
+                    relationship.id = (await this.neo4jConnector.addRelationships(rootNode.id, relationship, fileNode.id))[0];
+                }
             }
         }
     }
