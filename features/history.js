@@ -20,5 +20,6 @@ export default class history {
             
             
         // });
+        //1.node的节点改变并且node是
     }
 }

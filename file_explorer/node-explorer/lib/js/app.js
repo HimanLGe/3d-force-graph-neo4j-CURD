@@ -50,7 +50,7 @@ function ViewModel() {
   });
 
   this.goUp = function() {
-    if (rootDir === self.currentPath()) return;
+    // if (rootDir === self.currentPath()) return;
 
     var idx = self.currentPath().replaceAll("\\","/").lastIndexOf('/');
     var path = self.currentPath().replaceAll("\\","/").substr(0, idx);

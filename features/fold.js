@@ -1,3 +1,5 @@
+//DOLIST 尝试修复pnode和cnode为collapse
+
 export default class Fold{
 
     constructor() { 
@@ -103,9 +105,11 @@ export default class Fold{
                                 }
                                 else break;
                             }
-                            link.target = cnode.id;
-                            link.collapsed = false;
-                            visibleLinks.push(link);
+                            if (!cnode.collapsed) {
+                                link.target = cnode.id;
+                                link.collapsed = false;
+                                visibleLinks.push(link);
+                            }
                         }
                         //stack.push(((typeof link.target) === 'object') ? link.target : _this.nodesById[link.target]);
                     }
@@ -138,7 +142,7 @@ export default class Fold{
                             else break;
                         }
                         let linkTargetNode = ((typeof link.target) === 'object') ? link.target : _this.nodesById[link.target];
-                        if (!linkTargetNode.collapsed) {
+                        if (!linkTargetNode.collapsed && !pnode.collapsed) {
                             link.source = pnode.id;
                             link.collapsed = true;
                             visibleLinks.push(link);
