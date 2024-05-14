@@ -642,6 +642,7 @@
         let sprite = null;
 
         if (_this.highlightLinks.has(link) || _this.selectedLinks.has(link)) {
+          console.log(link)
           if (link.active == undefined) {
             //console.log("active");
             //active hover

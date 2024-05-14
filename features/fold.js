@@ -90,7 +90,7 @@ export default class Fold{
                     visibleNodes.push(_this.getNodeById(node.id));
                     for (let i = 0; i < node.childLinks.length; i++) {
                         let link = node.childLinks[i];
-                        let targetNode = ((typeof link.target) === 'object') ? link.target : _this.nodesById[link.target];
+                        let targetNode = _this.nodesById[_this.getNodeId(link.target)];
                         if (!_this.nodesById[targetNode.id].collapsed) {
                             link.collapsed = false;
                             visibleLinks.push(link);
@@ -98,8 +98,8 @@ export default class Fold{
                             let cnode = _this.nodesById[link.target.id].childLinks[0].target;
                             while (cnode.collapsed) {
                                 if (cnode.childLinks.length > 0) {
-                                    for (l of cnode.childLinks) {
-                                        cnode = ((typeof l.target) === 'object') ? l.target : _this.nodesById[l.target];
+                                    for (let l of cnode.childLinks) {
+                                        cnode = _this.nodesById[_this.getNodeId(l.target)];
                                         if (!cnode.collapsed) break;
                                     }
                                 }
@@ -117,16 +117,16 @@ export default class Fold{
                     for (let i = 0; i < node.childLinks.length; i++) {
                         let link = node.childLinks[i];
                         let visiblesource = null;
-                        let pnode = ((typeof node.parentLinks[0].source) === 'object') ? node.parentLinks[0].source : _this.nodesById[node.parentLinks[0].source];
+                        let pnode =  _this.nodesById[_this.getNodeId(node.parentLinks[0].source)];
                         while (pnode.collapsed) {
                             if (pnode.parentLinks.length > 0)
-                                pnode = ((typeof pnode.parentLinks[0].source) === 'object') ? pnode.parentLinks[0].source : _this.nodesById[pnode.parentLinks[0].source];
+                                pnode = _this.nodesById[_this.getNodeId(pnode.parentLinks[0].source)];
                             else break;
                         }
                         while (pnode.collapsed) {
                             if (pnode.childLinks.length > 0) {
-                                for (l of pnode.childLinks) {
-                                    let cnode = ((typeof l.target) === 'object') ? l.target : _this.nodesById[l.target];
+                                for (let l of pnode.childLinks) {
+                                    let cnode = _this.nodesById[_this.getNodeId(l.target)];
                                     if (cnode.id == node.id) {
                                         if (pnode.childLinks.length == 1) {
                                             pnode = pnode.childLinks[0].target;
@@ -141,7 +141,7 @@ export default class Fold{
                             }
                             else break;
                         }
-                        let linkTargetNode = ((typeof link.target) === 'object') ? link.target : _this.nodesById[link.target];
+                        let linkTargetNode = _this.nodesById[_this.getNodeId(link.target)];
                         if (!linkTargetNode.collapsed && !pnode.collapsed) {
                             link.source = pnode.id;
                             link.collapsed = true;
@@ -187,6 +187,11 @@ export default class Fold{
         return this.rawLinks.find(l => { 
             return l.index == index;
         });
+    }
+
+    getNodeId(node) { 
+        let id = (typeof node === 'object') ? node.id : node;
+        return id
     }
 
     
