@@ -284,5 +284,6 @@ const appurl = 'http://localhost/testWith3dGraph.html';
 (async () => {
   await startNeo4j();
 
-  spawn('cmd', ['/c', 'start', appurl], { stdio: 'ignore' });
+  //reopen url
+  //spawn('cmd', ['/c', 'start', appurl], { stdio: 'ignore' });
 })();

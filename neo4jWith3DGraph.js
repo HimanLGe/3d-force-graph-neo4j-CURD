@@ -67,6 +67,7 @@
 		
 		async addNodes(nodes) {
 			let nodeids = [];
+			let _this = this;
 			await this.Connector.addNodes(nodes).then((ids) => {
 				nodeids = ids;
 				nodes = nodes.map((node,idx)=>{
@@ -75,7 +76,7 @@
 				});
 				this.graphManager.addNodes(nodes);
 				this.nodes.forEach(node=>{
-					this.nodeChangeSlot.forEach(slot => {slot(node)});
+					_this.nodeChangeSlot.forEach(slot => {slot(node)});
 				})
 				
 			});
@@ -94,9 +95,10 @@
 			return ls;
 		}
 		
-		async setNode(node){
+		async setNode(node) {
+			let _this = this;
 			await this.Connector.setNode(node);
-			this.nodeChangeSlot.forEach(slot => {slot(node)});
+			_this.nodeChangeSlot.forEach(slot => {slot(node)});
 		}
 		
 		async setLink(link){
